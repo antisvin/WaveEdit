@@ -194,6 +194,37 @@ static void menuSaveWaves() {
 	free(dir);
 }
 
+static void menuOpenRom() {
+	char *dir = getLastDir();
+	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
+	if (path) {
+		showCurrentBankPage();
+		currentBank.loadROM(path);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+		historyPush();
+		free(path);
+	}
+	free(dir);
+}
+
+static void menuSaveRomAs() {
+	char *dir = getLastDir();
+	char *path = osdialog_file(OSDIALOG_SAVE, dir, "Untitled.hex", NULL);
+	if (path) {
+		currentBank.saveROM(path);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+		free(path);
+	}
+	free(dir);
+}
+
+static void menuSaveRom() {
+	if (lastFilename[0] != '\0')
+		currentBank.saveROM(lastFilename);
+	else
+		menuSaveBankAs();
+}
+
 static void menuQuit() {
 	SDL_Event event;
 	event.type = SDL_QUIT;
@@ -251,6 +282,12 @@ static void menuKeyCommands() {
 			menuSaveBank();
 		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
 			menuSaveBankAs();
+		if (ImGui::IsKeyPressed(SDLK_r) && !io.KeyShift && !io.KeyAlt)
+			menuOpenRom();
+		if (ImGui::IsKeyPressed(SDLK_m) && !io.KeyShift && !io.KeyAlt)
+			menuSaveRom();
+		if (ImGui::IsKeyPressed(SDLK_m) && io.KeyShift && !io.KeyAlt)
+			menuSaveRomAs();
 		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
 			menuQuit();
 		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
@@ -400,6 +437,12 @@ void renderMenu() {
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves to Folder...", NULL))
 				menuSaveWaves();
+			if (ImGui::MenuItem("Open Rom...", ImGui::GetIO().OSXBehaviors ? "Cmd+R" : "Ctrl+R"))
+				menuOpenRom();
+			if (ImGui::MenuItem("Save Rom", ImGui::GetIO().OSXBehaviors ? "Cmd+M" : "Ctrl+M"))
+				menuSaveRom();
+			if (ImGui::MenuItem("Save Rom As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+M" : "Ctrl+Shift+M"))
+				menuSaveRomAs();
 			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q"))
 				menuQuit();
 

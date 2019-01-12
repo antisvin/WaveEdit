@@ -178,9 +178,11 @@ extern bool clipboardActive;
 // bank.cpp
 ////////////////////
 
-#define BANK_LEN 64
-#define BANK_GRID_WIDTH 8
-#define BANK_GRID_HEIGHT 8
+#define BANK_LEN 256
+#define BANK_GRID_WIDTH 16
+#define BANK_GRID_HEIGHT 16
+#define HEX_LINE_WIDTH 32
+// This is width of actual data per HEX file line, currently hardcoded to avoid proper file parsing
 
 struct Bank {
 	Wave waves[BANK_LEN];
@@ -200,6 +202,9 @@ struct Bank {
 	void loadWAV(const char *filename);
 	/** Saves each wave to its own file in a directory */
 	void saveWaves(const char *dirname);
+	/** ROM file with BANK_LEN * WAVE_LEN samples */
+	void saveROM(const char *filename);
+	void loadROM(const char *filename);
 };
 
 

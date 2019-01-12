@@ -118,3 +118,82 @@ void Bank::saveWaves(const char *dirname) {
 		waves[b].saveWAV(filename);
 	}
 }
+
+
+void Bank::saveROM(const char *filename) {
+	FILE *f = fopen(filename, "w");
+
+	if (!f)
+        	return;
+	
+	char line[43];
+	char byte[4];
+	char index[5];
+	int checksum;
+	char checksum_str[3];
+	
+	for (int i = 0; i < BANK_LEN; i++) {
+		for (int j = 0; j < WAVE_LEN / HEX_LINE_WIDTH * 2; j++) {
+                        strcpy(line, "10");
+			sprintf(index, "%04X", (i * 16 + j) * 16);
+			strcat(line, index);
+			strcat(line, "00");
+			for (int k = 0; k < HEX_LINE_WIDTH / 2; k++) {
+				sprintf(byte, "%02X", (uint8_t) rescalef(waves[i].samples[j * HEX_LINE_WIDTH / 2 + k], -1.0, 1.0, 0.0, 255.0));
+				strcat(line, byte);
+			};
+			checksum = 0;
+			
+			for (size_t l = 0; l < strlen(line) / 2; l++) {
+				strncpy(byte, line + l * 2, 2);
+				checksum += strtol(byte, NULL, 16);
+				checksum &= 0xFF;
+			};
+			checksum = 0xFF - checksum;
+			sprintf(checksum_str, "%02X", checksum);
+			strcat(line, checksum_str);
+			fprintf(f, ":%s\n", line);
+		};
+	}
+
+	fprintf(f, ":00000001FF\n");
+	fclose(f);
+}
+
+
+void Bank::loadROM(const char *filename) {
+	FILE *f = fopen(filename, "r");
+
+	if (!f)
+        	return;
+
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+	int data;
+	char byte[2];
+	
+	clear();
+
+	for (int i = 0; i < BANK_LEN; i++) {
+		for (int j = 0; j < WAVE_LEN / HEX_LINE_WIDTH * 2; j++) {
+			while ((getline(&line, &len, f)) != -1) {
+				if ((line[7] != '0') || (line[8] != '0'))
+					continue;
+				for (int k = 0; k < HEX_LINE_WIDTH / 2; k+= 1) {
+					byte[0] = line[k * 2 + 9];
+					byte[1] = line[k * 2 + 10];
+					waves[i].samples[j * HEX_LINE_WIDTH / 2 + k] = rescalef(float(strtol(byte, NULL, 16)), 0.0, 255.0, -1.0, 1.0);
+				};
+				break;
+			}
+		};
+		waves[i].commitSamples();
+	}
+
+	fclose(f);
+	if (line)
+		free(line);
+}
+
+
