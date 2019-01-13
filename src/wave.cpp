@@ -270,6 +270,18 @@ void Wave::randomizeEffects() {
 	updatePost();
 }
 
+void Wave::morphEffect(Wave *from_wave, Wave *to_wave, EffectID effect, float fade) {
+	effects[effect] = crossf(from_wave->effects[effect], to_wave->effects[effect], fade);
+	updatePost();
+}
+
+void Wave::morphAllEffects(Wave *from_wave, Wave *to_wave, float fade) {
+	for (int i = 0; i < EFFECTS_LEN; i++){
+		effects[i] = crossf(from_wave->effects[i], to_wave->effects[i], fade);
+	};
+	updatePost();
+}
+
 void Wave::saveWAV(const char *filename) {
 	SF_INFO info;
 	info.samplerate = 44100;

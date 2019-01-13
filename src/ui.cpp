@@ -265,6 +265,28 @@ static void menuRandomize() {
 	historyPush();
 }
 
+static void menuMorphEffectsAll() {
+	int a = mini(selectedId, lastSelectedId);
+	int b = maxi(selectedId, lastSelectedId);
+	Wave *wave_a = &currentBank.waves[a];
+	Wave *wave_b = &currentBank.waves[b];
+	for (int i = a + 1; i < b; i++) {
+		currentBank.waves[i].morphAllEffects(wave_a, wave_b, (float)(i - a) / (float)(b - a));
+	}
+	historyPush();
+}
+
+static void menuMorphEffect(EffectID effect) {
+	int a = mini(selectedId, lastSelectedId);
+	int b = maxi(selectedId, lastSelectedId);
+	Wave *wave_a = &currentBank.waves[a];
+	Wave *wave_b = &currentBank.waves[b];
+	for (int i = a + 1; i < b; i++) {
+		currentBank.waves[i].morphEffect(wave_a, wave_b, effect, (float)(i - a) / (float)(b - a));
+	}
+	historyPush();
+}
+
 static void incrementSelectedId(int delta) {
 	selectWave(clampi(selectedId + delta, 0, BANK_LEN-1));
 }
@@ -313,6 +335,8 @@ static void menuKeyCommands() {
 		if (!g.ActiveId || g.ActiveId != GImGui->InputTextState.Id) {
 			if (ImGui::IsKeyPressed(SDLK_r))
 				menuRandomize();
+			if (ImGui::IsKeyPressed(SDLK_a))
+				menuMorphEffectsAll();
 			if (ImGui::IsKeyPressed(io.OSXBehaviors ? SDLK_BACKSPACE : SDLK_DELETE))
 				menuClear();
 			// Pages
@@ -357,6 +381,16 @@ void renderWaveMenu() {
 	}
 	if (ImGui::MenuItem("Randomize Effects", "R")) {
 		menuRandomize();
+	}
+	if (ImGui::MenuItem("Morph All Effects", "A")) {
+		menuMorphEffectsAll();
+	}
+	char fxName[128];
+	for (int effect = PRE_GAIN ; effect < EFFECTS_LEN; effect++) {
+		sprintf(fxName, "Morph %s", effectNames[effect]);
+		if (ImGui::MenuItem(fxName)) {
+			menuMorphEffect(static_cast<EffectID>(effect));
+		}
 	}
 
 	if (selectedStart != selectedEnd) {

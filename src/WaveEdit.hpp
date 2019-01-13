@@ -161,6 +161,8 @@ struct Wave {
 	void commitSamples();
 	void commitHarmonics();
 	void clearEffects();
+	void morphEffect(Wave *from_wave, Wave *to_wave, EffectID effect, float fade);
+	void morphAllEffects(Wave *from_wave, Wave *to_wave, float fade);
 	/** Applies effects to the sample array and resets the effect parameters */
 	void bakeEffects();
 	void randomizeEffects();
