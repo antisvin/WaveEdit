@@ -15,6 +15,7 @@ const char *effectNames[EFFECTS_LEN] {
 	"Ring Modulation",
 	"Chebyshev Wavefolding",
 	"Sample & Hold",
+	"Track & Hold",
 	"Quantization",
 	"Slew Limiter",
 	"Lowpass Filter",
@@ -113,6 +114,22 @@ void Wave::updatePost() {
 		for (int i = 0; i < WAVE_LEN; i++) {
 			float index = roundf(i / frameskip) * frameskip;
 			out[i] = linterpf(tmp, clampf(index, 0.0, WAVE_LEN - 1));
+		}
+	}
+
+	// Track & Hold
+	if (effects[TRACK_AND_HOLD] > 0.0) {
+		float frameskip = powf(WAVE_LEN / 2.0, clampf(effects[TRACK_AND_HOLD], 0.0, 1.0));
+		float tmp[WAVE_LEN + 1];
+		memcpy(tmp, out, sizeof(float) * WAVE_LEN);
+		tmp[WAVE_LEN] = tmp[0];
+
+		// Dumb linear interpolation S&H
+		for (int i = 0; i < WAVE_LEN; i++) {
+			float index = roundf(i / frameskip) * frameskip;
+			if (i >= index) {
+			    out[i] = linterpf(tmp, clampf(index, 0.0, WAVE_LEN - 1));
+			}
 		}
 	}
 
