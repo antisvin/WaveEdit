@@ -10,7 +10,9 @@ bool clipboardActive = false;
 const char *effectNames[EFFECTS_LEN] {
 	"Pre-Gain",
 	"Phase Shift",
+	"Phase Distortion",
 	"Harmonic Shift",
+	"Harmonic Stretch",
 	"Comb Filter",
 	"Ring Modulation",
 	"Chebyshev Wavefolding",
@@ -40,18 +42,53 @@ void Wave::updatePost() {
 		}
 	}
 
-	// Temporal and Harmonic Shift
-	if (effects[PHASE_SHIFT] > 0.0 || effects[HARMONIC_SHIFT] > 0.0) {
+	// Temporal and Harmonic Shift, Harmonic Stretch
+	if (effects[HARMONIC_STRETCH] > 0.0 || effects[PHASE_SHIFT] > 0.0 || effects[HARMONIC_SHIFT] > 0.0) {
 		// Shift Fourier phase proportionally
 		float tmp[WAVE_LEN];
+		float tmp1[WAVE_LEN] = {};
 		RFFT(out, tmp, WAVE_LEN);
 		for (int k = 0; k < WAVE_LEN / 2; k++) {
 			float phase = clampf(effects[HARMONIC_SHIFT], 0.0, 1.0) + clampf(effects[PHASE_SHIFT], 0.0, 1.0) * k;
 			float br = cosf(2 * M_PI * phase);
 			float bi = -sinf(2 * M_PI * phase);
 			cmultf(&tmp[2 * k], &tmp[2 * k + 1], tmp[2 * k], tmp[2 * k + 1], br, bi);
+			if (effects[HARMONIC_STRETCH] > 0.0) {
+				int dst = (int) (2 * (k + k * effects[HARMONIC_STRETCH] * 4)) % WAVE_LEN;
+				tmp1[dst] += tmp[2 * k];
+				tmp1[dst + 1] += tmp[2 * k + 1];
+			}
+		};
+		if (effects[HARMONIC_STRETCH] > 0.0) {
+			IRFFT(tmp1, out, WAVE_LEN);
 		}
-		IRFFT(tmp, out, WAVE_LEN);
+		else {
+			IRFFT(tmp, out, WAVE_LEN);
+		}
+	}
+	
+	if (effects[PHASE_DISTORTION] > 0.0) {
+		float phase, dst_phase;
+		float tmp[WAVE_LEN + 1];
+		memcpy(tmp, out, sizeof(float) * WAVE_LEN);
+		tmp[WAVE_LEN] = tmp[0];
+		
+		float phase_midpoint = 0.5 + clampf(effects[PHASE_DISTORTION], 0.0, 1.0) / 2;
+		for (int i = 0; i < WAVE_LEN; i++) {
+			phase = ((float) i ) / WAVE_LEN;
+			if (phase < phase_midpoint) {
+				printf("< ");
+				dst_phase = rescalef(phase, 0.0, phase_midpoint, 0.0, 0.5);
+			}
+			else {
+				printf("> ");
+				dst_phase = rescalef(phase, phase_midpoint, 1.0, 0.5, 1.0);
+			};
+			printf("%i %f = %f\n", i, phase, dst_phase);
+			int dst_idx = (int) (dst_phase * WAVE_LEN);
+			float delta = (dst_phase - ((float) dst_idx) / WAVE_LEN) * WAVE_LEN;
+			out[i] = crossf(tmp[dst_idx], tmp[dst_idx + 1], delta);
+		}
 	}
 
 	// Comb filter
@@ -282,7 +319,7 @@ void Wave::bakeEffects() {
 
 void Wave::randomizeEffects() {
 	for (int i = 0; i < EFFECTS_LEN; i++) {
-		effects[i] = randf() > 0.5 ? powf(randf(), 2) : 0.0;
+		effects[i] = randf() > 0.75 ? powf(randf(), 2) : 0.0;
 	}
 	updatePost();
 }
