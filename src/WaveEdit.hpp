@@ -125,9 +125,10 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 enum EffectID {
 	PRE_GAIN,
 	PHASE_SHIFT,
-	PHASE_DISTORTION,
 	HARMONIC_SHIFT,
 	HARMONIC_STRETCH,
+	PHASE_DISTORTION,
+	CUBIC_DISTORTION,
 	COMB,
 	RING,
 	CHEBYSHEV,

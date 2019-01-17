@@ -10,9 +10,10 @@ bool clipboardActive = false;
 const char *effectNames[EFFECTS_LEN] {
 	"Pre-Gain",
 	"Phase Shift",
-	"Phase Distortion",
 	"Harmonic Shift",
 	"Harmonic Stretch",
+	"Phase Distortion",
+	"Cubic Distortion",
 	"Comb Filter",
 	"Ring Modulation",
 	"Chebyshev Wavefolding",
@@ -67,7 +68,7 @@ void Wave::updatePost() {
 		}
 	}
 	
-	if (effects[PHASE_DISTORTION] > 0.0) {
+	if (effects[PHASE_DISTORTION] > 0.0 || effects[CUBIC_DISTORTION] > 0.0) {
 		float phase, dst_phase;
 		float tmp[WAVE_LEN + 1];
 		memcpy(tmp, out, sizeof(float) * WAVE_LEN);
@@ -77,16 +78,19 @@ void Wave::updatePost() {
 		for (int i = 0; i < WAVE_LEN; i++) {
 			phase = ((float) i ) / WAVE_LEN;
 			if (phase < phase_midpoint) {
-				printf("< ");
 				dst_phase = rescalef(phase, 0.0, phase_midpoint, 0.0, 0.5);
 			}
 			else {
-				printf("> ");
 				dst_phase = rescalef(phase, phase_midpoint, 1.0, 0.5, 1.0);
 			};
-			printf("%i %f = %f\n", i, phase, dst_phase);
-			int dst_idx = (int) (dst_phase * WAVE_LEN);
-			float delta = (dst_phase - ((float) dst_idx) / WAVE_LEN) * WAVE_LEN;
+			
+			float cubic_phase = rescalef(dst_phase, 0.0, 1.0, -1.0, 1.0);
+			cubic_phase = cubic_phase * cubic_phase * cubic_phase;
+			
+			float final_phase = crossf(dst_phase, rescalef(cubic_phase, -1.0, 1.0, 0.0, 1.0), effects[CUBIC_DISTORTION]);
+			
+			int dst_idx = (int) (final_phase * WAVE_LEN);
+			float delta = (final_phase - ((float) dst_idx) / WAVE_LEN) * WAVE_LEN;
 			out[i] = crossf(tmp[dst_idx], tmp[dst_idx + 1], delta);
 		}
 	}
