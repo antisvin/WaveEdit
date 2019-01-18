@@ -149,7 +149,7 @@ void Bank::saveROM(const char *filename) {
 				checksum += strtol(byte, NULL, 16);
 				checksum &= 0xFF;
 			};
-			checksum = 0xFF - checksum;
+			checksum = (0x100 - checksum) & 0xFF;
 			sprintf(checksum_str, "%02X", checksum);
 			strcat(line, checksum_str);
 			fprintf(f, ":%s\n", line);
