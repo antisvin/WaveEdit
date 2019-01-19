@@ -173,6 +173,7 @@ struct Wave {
 	void saveWAV(const char *filename);
 	void loadWAV(const char *filename);
 	/** Writes to a global state */
+	void copy(Wave *dst);
 	void clipboardCopy();
 	void clipboardPaste();
 };

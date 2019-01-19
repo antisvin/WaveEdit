@@ -251,6 +251,15 @@ static void menuPaste() {
 	historyPush();
 }
 
+static void menuDuplicateToRow() {
+	int pasteStart = selectedId / BANK_GRID_WIDTH * BANK_GRID_WIDTH;
+	for (int i = pasteStart; i < pasteStart + BANK_GRID_WIDTH; i++){
+		if (i != selectedId)
+			currentBank.waves[i].copy(&currentBank.waves[selectedId]);
+	}
+}
+
+
 static void menuClear() {
 	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
 		currentBank.waves[i].clear();
@@ -261,6 +270,13 @@ static void menuClear() {
 static void menuRandomize() {
 	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
 		currentBank.waves[i].randomizeEffects();
+	}
+	historyPush();
+}
+
+static void menuPasteSelected() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].clipboardPaste();
 	}
 	historyPush();
 }
@@ -324,6 +340,8 @@ static void menuKeyCommands() {
 			menuCut();
 		if (ImGui::IsKeyPressed(SDLK_v) && !io.KeyShift && !io.KeyAlt)
 			menuPaste();
+		if (ImGui::IsKeyPressed(SDLK_d) && !io.KeyShift && !io.KeyAlt)
+			menuDuplicateToRow();
 	}
 	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
 	// It looks like SDLZ_F1 is not defined correctly or something.
@@ -333,6 +351,8 @@ static void menuKeyCommands() {
 	if (!io.KeySuper && !io.KeyCtrl && !io.KeyShift && !io.KeyAlt) {
 		// Only trigger these key commands if no text box is focused
 		if (!g.ActiveId || g.ActiveId != GImGui->InputTextState.Id) {
+			if (ImGui::IsKeyPressed(SDLK_v))
+				menuPasteSelected();
 			if (ImGui::IsKeyPressed(SDLK_r))
 				menuRandomize();
 			if (ImGui::IsKeyPressed(SDLK_a))
@@ -379,6 +399,9 @@ void renderWaveMenu() {
 	if (ImGui::MenuItem("Clear", "Delete")) {
 		menuClear();
 	}
+	if (ImGui::MenuItem("Paste To Selected", "V")) {
+		menuPasteSelected();
+	}
 	if (ImGui::MenuItem("Randomize Effects", "R")) {
 		menuRandomize();
 	}
@@ -407,6 +430,9 @@ void renderWaveMenu() {
 	}
 	if (ImGui::MenuItem("Paste", ImGui::GetIO().OSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive)) {
 		menuPaste();
+	}
+	if (ImGui::MenuItem("Duplicate To Row", ImGui::GetIO().OSXBehaviors ? "Cmd+D" : "Ctrl+D")) {
+		menuDuplicateToRow();
 	}
 
 	if (ImGui::MenuItem("Open Wave...")) {
