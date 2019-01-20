@@ -23,6 +23,8 @@ const char *effectNames[EFFECTS_LEN] {
 	"Slew Limiter",
 	"Lowpass Filter",
 	"Highpass Filter",
+	"Phase Feedback",
+	"Frequency Feedback",
 	"Post-Gain",
 };
 
@@ -210,6 +212,16 @@ void Wave::updatePost() {
 		IRFFT(fft, out, WAVE_LEN);
 	}
 
+	// Phase Feedback
+	if (effects[PHASE_FEEDBACK] > 0.0) {
+		phaseModulation(out, out, clampf(effects[PHASE_FEEDBACK], 0.0, 1.0));
+	}
+	
+	// Frequency Feedback
+	if (effects[FREQUENCY_FEEDBACK] > 0.0) {
+		frequencyModulation(out, out, clampf(effects[FREQUENCY_FEEDBACK], 0.0, 1.0));
+	}
+	
 	// TODO Consider removing because Normalize does this for you
 	// Post gain
 	if (effects[POST_GAIN]) {
@@ -340,6 +352,61 @@ void Wave::morphAllEffects(Wave *from_wave, Wave *to_wave, float fade) {
 	updatePost();
 }
 
+void Wave::amplitudeModulation(){
+	for (int i = 0; i < WAVE_LEN; i++) {
+		samples[i] *= rescalef(clipboardWave.samples[i], -1.0, 1.0, 0.0, 1.0);
+	};
+	updatePost();
+}
+
+
+void Wave::ringModulation(){
+	for (int i = 0; i < WAVE_LEN; i++) {
+		samples[i] *= clipboardWave.samples[i];
+	};
+	updatePost();
+}
+
+void Wave::applyPhaseModulation() {
+	phaseModulation(samples, clipboardWave.samples, 1.0);
+        updatePost();
+}
+
+void Wave::applyFrequencyModulation() {
+	frequencyModulation(samples, clipboardWave.samples, 1.0);
+        updatePost();
+}
+
+void phaseModulation(float *carrier, const float *modulator, float index) {
+	float tmp[WAVE_LEN + 1];
+	memcpy(tmp, carrier, sizeof(float) * WAVE_LEN);
+	tmp[WAVE_LEN] = tmp[0];
+	for (int i = 0; i < WAVE_LEN; i++) {
+		float modulation = modulator[i] * index * 16;
+		float phase = ((float) i) / WAVE_LEN + modulation;
+		if (phase <= 0)
+			phase = 1 - phase;
+		carrier[i] = linterpf(tmp, fmod(phase * WAVE_LEN, WAVE_LEN));
+		//carrier[i] = tmp[(int) (phase * WAVE_LEN) % WAVE_LEN];
+	};
+}
+
+void frequencyModulation(float *carrier, const float *modulator, float index) {
+	float tmp[WAVE_LEN];
+	memcpy(tmp, carrier, sizeof(float) * WAVE_LEN);
+	float phase = 0.0;
+	for (int i = 0; i < WAVE_LEN; i++) {
+		float modulation = modulator[i] * index * 16;
+		phase += 1.0 / WAVE_LEN * (1 + rescalef(modulation, -1.0, 1.0, 0.0, 1.0));
+		//float phase = ((float) i) / WAVE_LEN * (1 + rescalef(modulation, -1.0, 1.0, 0.0, 1.0));
+		if (phase < 0)
+			phase = 1.0 - phase;
+		carrier[i] = tmp[(int) (phase * WAVE_LEN) % WAVE_LEN];
+		// Interpolation leads to aliasing here?!
+		//carrier[i] = linterpf(tmp, fmod(phase * WAVE_LEN, WAVE_LEN));
+	};
+}
+	
 void Wave::saveWAV(const char *filename) {
 	SF_INFO info;
 	info.samplerate = 44100;

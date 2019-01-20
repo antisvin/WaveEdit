@@ -71,10 +71,16 @@ Assumes that the array at `p` is of length at least ceil(x).
 inline float linterpf(const float *p, float x) {
 	int xi = x;
 	float xf = x - xi;
+	if (xf > 0.0)
+		return crossf(p[xi], p[xi + 1], xf);
+	else
+		return p[xi];
+	/*
 	if (xf < 1e-6)
 		return p[xi];
 	else
 		return crossf(p[xi], p[xi + 1], xf);
+	*/
 }
 
 /** Returns a random number on [0, 1) */
@@ -138,6 +144,8 @@ enum EffectID {
 	SLEW,
 	LOWPASS,
 	HIGHPASS,
+	PHASE_FEEDBACK,
+	FREQUENCY_FEEDBACK,
 	POST_GAIN,
 	EFFECTS_LEN
 };
@@ -167,6 +175,10 @@ struct Wave {
 	void clearEffects();
 	void morphEffect(Wave *from_wave, Wave *to_wave, EffectID effect, float fade);
 	void morphAllEffects(Wave *from_wave, Wave *to_wave, float fade);
+	void amplitudeModulation();
+	void ringModulation();
+	void applyPhaseModulation();
+	void applyFrequencyModulation();
 	/** Applies effects to the sample array and resets the effect parameters */
 	void bakeEffects();
 	void randomizeEffects();
@@ -179,7 +191,8 @@ struct Wave {
 };
 
 extern bool clipboardActive;
-
+void phaseModulation(float *carrier, const float *modulator, float index);
+void frequencyModulation(float *carrier, const float *modulator, float index);
 
 ////////////////////
 // bank.cpp

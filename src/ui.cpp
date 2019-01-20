@@ -257,6 +257,7 @@ static void menuDuplicateToRow() {
 		if (i != selectedId)
 			currentBank.waves[i].copy(&currentBank.waves[selectedId]);
 	}
+	historyPush();
 }
 
 
@@ -280,6 +281,35 @@ static void menuPasteSelected() {
 	}
 	historyPush();
 }
+
+static void menuWavesAM() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].amplitudeModulation();
+	}
+	historyPush();
+}
+
+static void menuWavesRM() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].ringModulation();
+	}
+	historyPush();
+}
+
+static void menuWavesPM() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].applyPhaseModulation();
+	}
+	historyPush();
+}
+
+static void menuWavesFM() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].applyFrequencyModulation();
+	}
+	historyPush();
+}
+
 
 static void menuMorphEffectsAll() {
 	int a = mini(selectedId, lastSelectedId);
@@ -404,6 +434,18 @@ void renderWaveMenu() {
 	}
 	if (ImGui::MenuItem("Randomize Effects", "R")) {
 		menuRandomize();
+	}
+	if (ImGui::MenuItem("Amplitude Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+M" : "Ctrl+M", false, clipboardActive)) {
+		menuWavesAM();
+	}
+	if (ImGui::MenuItem("Ring Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+R" : "Ctrl+R", false, clipboardActive)) {
+		menuWavesRM();
+	}
+	if (ImGui::MenuItem("Phase Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+P" : "Ctrl+P", false, clipboardActive)) {
+		menuWavesPM();
+	}
+	if (ImGui::MenuItem("Frequency Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+F" : "Ctrl+F", false, clipboardActive)) {
+		menuWavesFM();
 	}
 	if (ImGui::MenuItem("Morph All Effects", "A")) {
 		menuMorphEffectsAll();
