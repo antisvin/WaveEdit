@@ -11,6 +11,8 @@ const char *effectNames[EFFECTS_LEN] {
 	"Pre-Gain",
 	"Phase Shift",
 	"Harmonic Shift",
+	"Harmonic Asymetry",
+	"Harmonic Balance",
 	"Harmonic Stretch",
 	"Phase Distortion",
 	"Cubic Distortion",
@@ -45,17 +47,52 @@ void Wave::updatePost() {
 		}
 	}
 
-	// Temporal and Harmonic Shift, Harmonic Stretch
-	if (effects[HARMONIC_STRETCH] > 0.0 || effects[PHASE_SHIFT] > 0.0 || effects[HARMONIC_SHIFT] > 0.0) {
+	// Temporal and Harmonic Shift, Harmonic Asymetry, Harmonic Balance, Harmonic Stretch
+	if (effects[HARMONIC_STRETCH] > 0.0 || effects[PHASE_SHIFT] > 0.0 || effects[HARMONIC_ASYMETRY] > 0.0 || effects[HARMONIC_BALANCE] > 0.0 || effects[HARMONIC_SHIFT] > 0.0) {
 		// Shift Fourier phase proportionally
 		float tmp[WAVE_LEN];
 		float tmp1[WAVE_LEN] = {};
+		float *tmp2;
 		RFFT(out, tmp, WAVE_LEN);
 		for (int k = 0; k < WAVE_LEN / 2; k++) {
 			float phase = clampf(effects[HARMONIC_SHIFT], 0.0, 1.0) + clampf(effects[PHASE_SHIFT], 0.0, 1.0) * k;
 			float br = cosf(2 * M_PI * phase);
 			float bi = -sinf(2 * M_PI * phase);
 			cmultf(&tmp[2 * k], &tmp[2 * k + 1], tmp[2 * k], tmp[2 * k + 1], br, bi);
+			if ((effects[HARMONIC_ASYMETRY] > 0.0 || effects[HARMONIC_BALANCE] > 0.0) && k > 1) {
+				if (k % 2 == 0) {
+					float mag1 = hypotf(tmp[2 * k], tmp[2 * k + 1]);
+					float mag2 = hypotf(tmp[2 * k + 2], tmp[2 * k + 3]);
+					if (effects[HARMONIC_BALANCE] > 0.0) {
+						float mag1_ratio = mag1 ? (1 - (mag1 - mag2) * effects[HARMONIC_BALANCE] / mag1) : 0.0; 
+						float mag2_ratio = mag2 ? (1 - (mag2 - mag1) * effects[HARMONIC_BALANCE] / mag2) : 0.0; 
+						tmp[2 * k] *= mag1_ratio;
+						tmp[2 * k + 1] *= mag1_ratio;
+						tmp[2 * k + 2] *= mag2_ratio;
+						tmp[2 * k + 3] *= mag2_ratio;
+					}
+					if (effects[HARMONIC_ASYMETRY] > 0.0) {
+						float mag_min = fminf(mag1, mag2) * effects[HARMONIC_ASYMETRY];
+						float mag1_ratio = (mag1 - mag_min) / mag1;
+						float mag2_ratio = (mag2 - mag_min) / mag2;
+						tmp[2 * k] *= mag1_ratio;
+						tmp[2 * k + 1] *= mag1_ratio;
+						tmp[2 * k + 2] *= mag2_ratio;
+						tmp[2 * k + 3] *= mag2_ratio;
+					}
+				}
+			};
+			/*
+			if (effects[HARMONIC_BALANCE] > 0.0 && k > 1) {
+				if (k % 2 == 0) {
+					float diff_r = (tmp[2 * k] - tmp[2 * k + 2]) * effects[HARMONIC_BALANCE];
+					float diff_i = (tmp[2 * k  + 1] - tmp[2 * k + 3]) * effects[HARMONIC_BALANCE];
+					tmp[2 * k] -= diff_r;
+					tmp[2 * k + 1] -= diff_i;
+					tmp[2 * k + 2] += diff_r;
+					tmp[2 * k + 3] += diff_i;
+				};
+			}*/
 			if (effects[HARMONIC_STRETCH] > 0.0) {
 				int dst = (int) (2 * (k + k * effects[HARMONIC_STRETCH] * 4)) % WAVE_LEN;
 				tmp1[dst] += tmp[2 * k];
@@ -63,11 +100,12 @@ void Wave::updatePost() {
 			}
 		};
 		if (effects[HARMONIC_STRETCH] > 0.0) {
-			IRFFT(tmp1, out, WAVE_LEN);
+			tmp2 = tmp1;
 		}
 		else {
-			IRFFT(tmp, out, WAVE_LEN);
+			tmp2 = tmp;
 		}
+		IRFFT(tmp2, out, WAVE_LEN);
 	}
 	
 	if (effects[PHASE_DISTORTION] > 0.0 || effects[CUBIC_DISTORTION] > 0.0) {
@@ -324,13 +362,14 @@ void Wave::commitHarmonics() {
 void Wave::clearEffects() {
 	memset(effects, 0, sizeof(float) * EFFECTS_LEN);
 	cycle = false;
-	normalize = false;
+	normalize = true;
 	updatePost();
 }
 
 void Wave::bakeEffects() {
 	memcpy(samples, postSamples, sizeof(float)*WAVE_LEN);
 	clearEffects();
+	commitSamples();
 }
 
 void Wave::randomizeEffects() {
