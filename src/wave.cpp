@@ -17,7 +17,6 @@ const char *effectNames[EFFECTS_LEN] {
 	"Phase Distortion",
 	"Cubic Distortion",
 	"Comb Filter",
-	"Ring Modulation",
 	"Chebyshev Wavefolding",
 	"Sample & Hold",
 	"Track & Hold",
@@ -25,8 +24,11 @@ const char *effectNames[EFFECTS_LEN] {
 	"Slew Limiter",
 	"Lowpass Filter",
 	"Highpass Filter",
-	"Phase Feedback",
-	"Frequency Feedback",
+	"Phase Modulation Feedback",
+	"Frequency Modulation Feedback",
+	"Ring Modulation Feedback",
+	"Amplitude Modulation Feedback",
+	"Modulation Index",
 	"Post-Gain",
 };
 
@@ -73,8 +75,8 @@ void Wave::updatePost() {
 					}
 					if (effects[HARMONIC_ASYMETRY] > 0.0) {
 						float mag_min = fminf(mag1, mag2) * effects[HARMONIC_ASYMETRY];
-						float mag1_ratio = (mag1 - mag_min) / mag1;
-						float mag2_ratio = (mag2 - mag_min) / mag2;
+						float mag1_ratio = mag1 ? ((mag1 - mag_min) / mag1) : 0.0;
+						float mag2_ratio = mag2 ? ((mag2 - mag_min) / mag2) : 0.0;
 						tmp[2 * k] *= mag1_ratio;
 						tmp[2 * k + 1] *= mag1_ratio;
 						tmp[2 * k + 2] *= mag2_ratio;
@@ -82,17 +84,6 @@ void Wave::updatePost() {
 					}
 				}
 			};
-			/*
-			if (effects[HARMONIC_BALANCE] > 0.0 && k > 1) {
-				if (k % 2 == 0) {
-					float diff_r = (tmp[2 * k] - tmp[2 * k + 2]) * effects[HARMONIC_BALANCE];
-					float diff_i = (tmp[2 * k  + 1] - tmp[2 * k + 3]) * effects[HARMONIC_BALANCE];
-					tmp[2 * k] -= diff_r;
-					tmp[2 * k + 1] -= diff_i;
-					tmp[2 * k + 2] += diff_r;
-					tmp[2 * k + 3] += diff_i;
-				};
-			}*/
 			if (effects[HARMONIC_STRETCH] > 0.0) {
 				int dst = (int) (2 * (k + k * effects[HARMONIC_STRETCH] * 4)) % WAVE_LEN;
 				tmp1[dst] += tmp[2 * k];
@@ -164,13 +155,19 @@ void Wave::updatePost() {
 	}
 
 	// Ring modulation
+	/*
 	if (effects[RING] > 0.0) {
-		float ring = ceilf(powf(effects[RING], 2) * (WAVE_LEN / 2 - 2));
+		float ring1 = ceilf(powf(effects[RING], 2) * (WAVE_LEN / 2 - 3));
+		float ring2 = ring1 + 1;
+		float ring_diff = ring1 - powf(effects[RING], 2) * (WAVE_LEN / 2 - 2);
 		for (int i = 0; i < WAVE_LEN; i++) {
-			float phase = (float)i / WAVE_LEN * ring;
-			out[i] *= sinf(2 * M_PI * phase);
+			float phase1 = (float)i / WAVE_LEN * ring1;
+			float phase2 = (float)i / WAVE_LEN * ring2;
+			printf("%f %f %f %f %f\n", ring1, ring2, ring_diff, phase1, phase2);
+			out[i] *= sinf(2 * M_PI * phase1) * ring_diff + sinf(2 * M_PI * phase2) * (1 - ring_diff);
 		}
 	}
+	*/
 
 	// Chebyshev waveshaping
 	if (effects[CHEBYSHEV] > 0.0) {
@@ -249,15 +246,27 @@ void Wave::updatePost() {
 		}
 		IRFFT(fft, out, WAVE_LEN);
 	}
-
+	
+	// Modulation Index doesn't have it's own effect, but is used by 4 modulation effects below.
+	
 	// Phase Feedback
 	if (effects[PHASE_FEEDBACK] > 0.0) {
-		phaseModulation(out, out, clampf(effects[PHASE_FEEDBACK], 0.0, 1.0));
+		phaseModulation(out, out, rescalef(clampf(effects[MODULATION_INDEX], 0.0, 1.0), 0.0, 1.0, 0.0, 4.0), clampf(effects[PHASE_FEEDBACK], 0.0, 1.0));
 	}
 	
 	// Frequency Feedback
 	if (effects[FREQUENCY_FEEDBACK] > 0.0) {
-		frequencyModulation(out, out, clampf(effects[FREQUENCY_FEEDBACK], 0.0, 1.0));
+		frequencyModulation(out, out, rescalef(clampf(effects[MODULATION_INDEX], 0.0, 1.0), 0.0, 1.0, 0.0, 4.0), clampf(effects[FREQUENCY_FEEDBACK], 0.0, 1.0));
+	}
+	
+	// Ring Feedback
+	if (effects[RING_FEEDBACK] > 0.0) {
+		ringModulation(out, out, rescalef(clampf(effects[MODULATION_INDEX], 0.0, 1.0), 0.0, 1.0, 1.0, 9.0), clampf(effects[RING_FEEDBACK], 0.0, 1.0));
+	}
+	
+	// Amplitude Feedback
+	if (effects[AMPLITUDE_FEEDBACK] > 0.0) {
+		amplitudeModulation(out, out, rescalef(clampf(effects[MODULATION_INDEX], 0.0, 1.0), 0.0, 1.0, 1.0, 9.0), clampf(effects[AMPLITUDE_FEEDBACK], 0.0, 1.0));
 	}
 	
 	// TODO Consider removing because Normalize does this for you
@@ -391,61 +400,141 @@ void Wave::morphAllEffects(Wave *from_wave, Wave *to_wave, float fade) {
 	updatePost();
 }
 
-void Wave::amplitudeModulation(){
-	for (int i = 0; i < WAVE_LEN; i++) {
-		samples[i] *= rescalef(clipboardWave.samples[i], -1.0, 1.0, 0.0, 1.0);
-	};
+void Wave::applyAmplitudeModulation(){
+	amplitudeModulation(samples, clipboardWave.samples, 1.0, 1.0);
 	updatePost();
 }
 
 
-void Wave::ringModulation(){
-	for (int i = 0; i < WAVE_LEN; i++) {
-		samples[i] *= clipboardWave.samples[i];
-	};
+void Wave::applyRingModulation(){
+	ringModulation(samples, clipboardWave.samples, 1.0, 1.0);
 	updatePost();
 }
 
 void Wave::applyPhaseModulation() {
-	phaseModulation(samples, clipboardWave.samples, 1.0);
+	phaseModulation(samples, clipboardWave.samples, 0.0, 1.0);
         updatePost();
 }
 
 void Wave::applyFrequencyModulation() {
-	frequencyModulation(samples, clipboardWave.samples, 1.0);
+	frequencyModulation(samples, clipboardWave.samples, 1.0, 1.0);
         updatePost();
 }
 
-void phaseModulation(float *carrier, const float *modulator, float index) {
-	float tmp[WAVE_LEN + 1];
-	memcpy(tmp, carrier, sizeof(float) * WAVE_LEN);
-	tmp[WAVE_LEN] = tmp[0];
-	for (int i = 0; i < WAVE_LEN; i++) {
-		float modulation = modulator[i] * index * 16;
-		float phase = ((float) i) / WAVE_LEN + modulation;
-		if (phase <= 0)
-			phase = 1 - phase;
-		carrier[i] = linterpf(tmp, fmod(phase * WAVE_LEN, WAVE_LEN));
-		//carrier[i] = tmp[(int) (phase * WAVE_LEN) % WAVE_LEN];
+void ringModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
+	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, fmod(i * ceilf(index), WAVE_LEN * oversample + 1));
+		float modulation2 = linterpf(modulator_tmp, fmod(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1));
+		//float mod_sample = linterpf(modulator, fmod((float)i * depth, WAVE_LEN));
+		carrier_tmp[i] *= crossf(
+			1.0,
+			crossf(modulation1, modulation2, index_mod),
+			depth);
+		//(1 + rescalef(modulation1, -1.0, 1.0, 0.0, 1.0) * depth);
 	};
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+	
+//		float mod_sample = linterpf(modulator, fmod((float)i * index, WAVE_LEN));
+//		carrier[i] *= mod_sample;
+};
+
+void amplitudeModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
+	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, fmod(i * ceilf(index), WAVE_LEN * oversample + 1));
+		float modulation2 = linterpf(modulator_tmp, fmod(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1));
+		//float mod_sample = linterpf(modulator, fmod((float)i * depth, WAVE_LEN));
+		carrier_tmp[i] *= (1 + crossf(
+			rescalef(modulation1, -1.0, 1.0, 0.0, depth),
+			rescalef(modulation2, -1.0, 1.0, 0.0, depth),
+			index_mod));
+		//(1 + rescalef(modulation1, -1.0, 1.0, 0.0, 1.0) * depth);
+	};
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
 }
 
-void frequencyModulation(float *carrier, const float *modulator, float index) {
-	float tmp[WAVE_LEN];
-	memcpy(tmp, carrier, sizeof(float) * WAVE_LEN);
-	float phase = 0.0;
-	for (int i = 0; i < WAVE_LEN; i++) {
-		float modulation = modulator[i] * index * 16;
-		phase += 1.0 / WAVE_LEN * (1 + rescalef(modulation, -1.0, 1.0, 0.0, 1.0));
-		//float phase = ((float) i) / WAVE_LEN * (1 + rescalef(modulation, -1.0, 1.0, 0.0, 1.0));
-		if (phase < 0)
-			phase = 1.0 - phase;
-		carrier[i] = tmp[(int) (phase * WAVE_LEN) % WAVE_LEN];
-		// Interpolation leads to aliasing here?!
-		//carrier[i] = linterpf(tmp, fmod(phase * WAVE_LEN, WAVE_LEN));
-	};
-}
+void phaseModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
 	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, fmod(i * ceilf(index), WAVE_LEN * oversample + 1));
+		float modulation2 = linterpf(modulator_tmp, fmod(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1));
+		float phase1 = ((float) i) / WAVE_LEN / oversample + modulation1  * depth;
+		float phase2 = ((float) i) / WAVE_LEN / oversample + modulation2  * depth;
+		if (phase1 <= 0)
+			phase1 = 1 - phase1;
+		if (phase2 <= 0)
+			phase2 = 1 - phase2;
+		carrier_tmp[i] = crossf(
+			linterpf(tmp, fmod(phase1 * WAVE_LEN * oversample, WAVE_LEN * oversample + 1)),
+			linterpf(tmp, fmod(phase2 * WAVE_LEN * oversample, WAVE_LEN * oversample + 1)),
+			index_mod);
+	};
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+}
+
+void frequencyModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
+	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, fmod(i * ceilf(index), WAVE_LEN * oversample + 1));
+		float modulation2 = linterpf(modulator_tmp, fmod(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1));
+		float phase = (float) i / WAVE_LEN / oversample;
+		carrier_tmp[i] = crossf(
+			linterpf(tmp, fmod(phase * (1 + rescalef(modulation1, -1.0, 1.0, -depth, depth)) * WAVE_LEN * oversample, (WAVE_LEN  * oversample + 1))),
+			linterpf(tmp, fmod(phase * (1 + rescalef(modulation2, -1.0, 1.0, -depth, depth)) * WAVE_LEN * oversample, (WAVE_LEN  * oversample + 1))),
+			index_mod);
+	}
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+}
+
 void Wave::saveWAV(const char *filename) {
 	SF_INFO info;
 	info.samplerate = 44100;

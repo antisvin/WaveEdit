@@ -284,14 +284,14 @@ static void menuPasteSelected() {
 
 static void menuWavesAM() {
 	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
-		currentBank.waves[i].amplitudeModulation();
+		currentBank.waves[i].applyAmplitudeModulation();
 	}
 	historyPush();
 }
 
 static void menuWavesRM() {
 	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
-		currentBank.waves[i].ringModulation();
+		currentBank.waves[i].applyRingModulation();
 	}
 	historyPush();
 }

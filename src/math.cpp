@@ -68,6 +68,31 @@ void cyclicOversample(const float *in, float *out, int len, int oversample) {
 }
 
 
+void cyclicUndersample(const float *in, float *out, int len, int undersample) {
+	float x[len];
+	float fft[len];
+	
+	RFFT(in, fft, len);
+
+	// Apply brick wall filter
+	// y_{N/2} = 0
+	fft[1] = 0.0;
+	// y_k = 0 for k >= len
+	for (int i = len / undersample; i < len / 2; i++) {
+		fft[2 * i] = 0.0;
+		fft[2 * i + 1] = 0.0;
+	}
+
+	IRFFT(fft, x, len);
+	
+	//resample(x, len, out, len / undersample, 1.0 / (float) undersample);
+	
+	for (int i = 0; i < len / undersample; i++) {
+		out[i] = x[i * undersample];
+	}
+}
+
+
 void i16_to_f32(const int16_t *in, float *out, int length) {
 	for (int i = 0; i < length; i++) {
 		out[i] = in[i] / 32767.f;

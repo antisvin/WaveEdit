@@ -102,6 +102,7 @@ void IRFFT(const float *in, float *out, int len);
 
 int resample(const float *in, int inLen, float *out, int outLen, double ratio);
 void cyclicOversample(const float *in, float *out, int len, int oversample);
+void cyclicUndersample(const float *in, float *out, int len, int undersample);
 void i16_to_f32(const int16_t *in, float *out, int length);
 void f32_to_i16(const float *in, int16_t *out, int length);
 
@@ -138,7 +139,6 @@ enum EffectID {
 	PHASE_DISTORTION,
 	CUBIC_DISTORTION,
 	COMB,
-	RING,
 	CHEBYSHEV,
 	SAMPLE_AND_HOLD,
 	TRACK_AND_HOLD,
@@ -148,6 +148,9 @@ enum EffectID {
 	HIGHPASS,
 	PHASE_FEEDBACK,
 	FREQUENCY_FEEDBACK,
+	RING_FEEDBACK,
+	AMPLITUDE_FEEDBACK,
+	MODULATION_INDEX,
 	POST_GAIN,
 	EFFECTS_LEN
 };
@@ -177,8 +180,8 @@ struct Wave {
 	void clearEffects();
 	void morphEffect(Wave *from_wave, Wave *to_wave, EffectID effect, float fade);
 	void morphAllEffects(Wave *from_wave, Wave *to_wave, float fade);
-	void amplitudeModulation();
-	void ringModulation();
+	void applyRingModulation();
+	void applyAmplitudeModulation();
 	void applyPhaseModulation();
 	void applyFrequencyModulation();
 	/** Applies effects to the sample array and resets the effect parameters */
@@ -193,8 +196,10 @@ struct Wave {
 };
 
 extern bool clipboardActive;
-void phaseModulation(float *carrier, const float *modulator, float index);
-void frequencyModulation(float *carrier, const float *modulator, float index);
+void ringModulation(float *carrier, const float *modulator, float index, float depth);
+void amplitudeModulation(float *carrier, const float *modulator, float index, float depth);
+void phaseModulation(float *carrier, const float *modulator, float index, float depth);
+void frequencyModulation(float *carrier, const float *modulator, float index, float depth);
 
 ////////////////////
 // bank.cpp
