@@ -119,7 +119,7 @@ void Bank::saveWaves(const char *dirname) {
 	}
 }
 
-
+#if WAVETABLE_FORMAT_PHMK2
 void Bank::saveROM(const char *filename) {
 	FILE *f = fopen(filename, "w");
 
@@ -195,5 +195,5 @@ void Bank::loadROM(const char *filename) {
 	if (line)
 		free(line);
 }
-
+#endif
 

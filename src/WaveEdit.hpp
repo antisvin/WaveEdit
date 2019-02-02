@@ -129,6 +129,7 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 
 #define WAVE_LEN 256
 
+
 enum EffectID {
 	PRE_GAIN,
 	PHASE_SHIFT,
@@ -204,12 +205,19 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 ////////////////////
 // bank.cpp
 ////////////////////
+#if WAVETABLE_FORMAT_WAVEEDIT
+#define BANK_LEN 64
+#define BANK_GRID_WIDTH 8
+#define BANK_GRID_HEIGHT 8
 
+#elif WAVETABLE_FORMAT_PHMK2
 #define BANK_LEN 256
 #define BANK_GRID_WIDTH 16
 #define BANK_GRID_HEIGHT 16
 #define HEX_LINE_WIDTH 32
 // This is width of actual data per HEX file line, currently hardcoded to avoid proper file parsing
+
+#endif
 
 struct Bank {
 	Wave waves[BANK_LEN];
@@ -229,9 +237,11 @@ struct Bank {
 	void loadWAV(const char *filename);
 	/** Saves each wave to its own file in a directory */
 	void saveWaves(const char *dirname);
+#if WAVETABLE_FORMAT_PHMK2
 	/** ROM file with BANK_LEN * WAVE_LEN samples */
 	void saveROM(const char *filename);
 	void loadROM(const char *filename);
+#endif
 };
 
 

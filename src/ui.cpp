@@ -194,6 +194,7 @@ static void menuSaveWaves() {
 	free(dir);
 }
 
+#if WAVETABLE_FORMAT_PHMK2
 static void menuOpenRom() {
 	char *dir = getLastDir();
 	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
@@ -224,6 +225,7 @@ static void menuSaveRom() {
 	else
 		menuSaveBankAs();
 }
+#endif
 
 static void menuQuit() {
 	SDL_Event event;
@@ -350,12 +352,14 @@ static void menuKeyCommands() {
 			menuSaveBank();
 		if (ImGui::IsKeyPressed(SDLK_s) && io.KeyShift && !io.KeyAlt)
 			menuSaveBankAs();
+		#if WAVETABLE_FORMAT_PHMK2
 		if (ImGui::IsKeyPressed(SDLK_r) && !io.KeyShift && !io.KeyAlt)
 			menuOpenRom();
 		if (ImGui::IsKeyPressed(SDLK_m) && !io.KeyShift && !io.KeyAlt)
 			menuSaveRom();
 		if (ImGui::IsKeyPressed(SDLK_m) && io.KeyShift && !io.KeyAlt)
 			menuSaveRomAs();
+		#endif
 		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
 			menuQuit();
 		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
@@ -539,12 +543,14 @@ void renderMenu() {
 				menuSaveBankAs();
 			if (ImGui::MenuItem("Save Waves to Folder...", NULL))
 				menuSaveWaves();
+			#ifdef WAVETABLE_FORMAT_PHMK2
 			if (ImGui::MenuItem("Open Rom...", ImGui::GetIO().OSXBehaviors ? "Cmd+R" : "Ctrl+R"))
 				menuOpenRom();
 			if (ImGui::MenuItem("Save Rom", ImGui::GetIO().OSXBehaviors ? "Cmd+M" : "Ctrl+M"))
 				menuSaveRom();
 			if (ImGui::MenuItem("Save Rom As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+M" : "Ctrl+Shift+M"))
 				menuSaveRomAs();
+			#endif
 			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q"))
 				menuQuit();
 

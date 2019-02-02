@@ -1,7 +1,13 @@
 VERSION = 1.1
 
+VALID_WT_FORMATS := WAVEEDIT PHMK2
+WT_FORMAT ?= WAVEEDIT
+ifeq ($(filter $(VALID_WT_FORMATS),$(WT_FORMAT)),)
+$(error $(WT_FORMAT) must be one of "$(VALID_WT_FORMATS)", not "$(WT_FORMAT)")
+endif
+
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=nocona -ffast-math \
-	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE \
+	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE -DWAVETABLE_FORMAT_$(WT_FORMAT) \
 	-I. -Iext -Iext/imgui -Idep/include -Idep/include/SDL2
 CFLAGS =
 CXXFLAGS = -std=c++11
