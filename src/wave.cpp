@@ -62,6 +62,10 @@ void Wave::updatePost() {
 			float bi = -sinf(2 * M_PI * phase);
 			cmultf(&tmp[2 * k], &tmp[2 * k + 1], tmp[2 * k], tmp[2 * k + 1], br, bi);
 			if ((effects[HARMONIC_ASYMETRY] > 0.0 || effects[HARMONIC_BALANCE] > 0.0) && k > 1) {
+				float phase = clampf(effects[HARMONIC_SHIFT], 0.0, 1.0) + clampf(effects[PHASE_SHIFT], 0.0, 1.0) * k;
+				float br = cosf(2 * M_PI * phase);
+				float bi = -sinf(2 * M_PI * phase);
+				cmultf(&tmp[2 * k], &tmp[2 * k + 1], tmp[2 * k], tmp[2 * k + 1], br, bi);
 				if (k % 2 == 0) {
 					float mag1 = hypotf(tmp[2 * k], tmp[2 * k + 1]);
 					float mag2 = hypotf(tmp[2 * k + 2], tmp[2 * k + 3]);
@@ -84,10 +88,16 @@ void Wave::updatePost() {
 					}
 				}
 			};
-			if (effects[HARMONIC_STRETCH] > 0.0) {
-				int dst = (int) (2 * (k + k * effects[HARMONIC_STRETCH] * 4)) % WAVE_LEN;
-				tmp1[dst] += tmp[2 * k];
-				tmp1[dst + 1] += tmp[2 * k + 1];
+			if (effects[HARMONIC_STRETCH] > 0.0 && k < WAVE_LEN) {
+				const int steps = 8;
+				float scale = effects[HARMONIC_STRETCH] * steps;
+				float dstf = fmod(k + k * scale, WAVE_LEN / 2);
+				int dst = (int) dstf * 2;
+				float ratio = fmod(dstf, 1.0);
+				tmp1[dst % WAVE_LEN] += crossf(tmp[2 * k], 0.0, ratio);
+				tmp1[(dst + 1) % WAVE_LEN] += crossf(tmp[(2 * k + 1) % WAVE_LEN], 0.0, ratio);
+				tmp1[(dst + 2) % WAVE_LEN] += crossf(0.0, tmp[2 * k], ratio);
+				tmp1[(dst + 3) % WAVE_LEN] += crossf(0.0, tmp[(2 * k + 1) % WAVE_LEN], ratio);
 			}
 		};
 		if (effects[HARMONIC_STRETCH] > 0.0) {
