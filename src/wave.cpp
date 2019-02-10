@@ -14,6 +14,7 @@ const char *effectNames[EFFECTS_LEN] {
 	"Harmonic Asymetry",
 	"Harmonic Balance",
 	"Harmonic Stretch",
+	"Harmonic Fold",
 	"Phase Distortion",
 	"Cubic Distortion",
 	"Comb Filter",
@@ -50,11 +51,12 @@ void Wave::updatePost() {
 	}
 
 	// Temporal and Harmonic Shift, Harmonic Asymetry, Harmonic Balance, Harmonic Stretch
-	if (effects[HARMONIC_STRETCH] > 0.0 || effects[PHASE_SHIFT] > 0.0 || effects[HARMONIC_ASYMETRY] > 0.0 || effects[HARMONIC_BALANCE] > 0.0 || effects[HARMONIC_SHIFT] > 0.0) {
+	if (effects[HARMONIC_STRETCH] > 0.0 || effects[PHASE_SHIFT] > 0.0 || effects[HARMONIC_ASYMETRY] > 0.0 || effects[HARMONIC_BALANCE] > 0.0 || effects[HARMONIC_SHIFT] > 0.0 || effects[HARMONIC_FOLD] > 0.0) {
 		// Shift Fourier phase proportionally
 		float tmp[WAVE_LEN];
 		float tmp1[WAVE_LEN] = {};
 		float *tmp2;
+		float tmp3[WAVE_LEN] = {};
 		RFFT(out, tmp, WAVE_LEN);
 		for (int k = 0; k < WAVE_LEN / 2; k++) {
 			float phase = clampf(effects[HARMONIC_SHIFT], 0.0, 1.0) + clampf(effects[PHASE_SHIFT], 0.0, 1.0) * k;
@@ -105,6 +107,26 @@ void Wave::updatePost() {
 		}
 		else {
 			tmp2 = tmp;
+		}
+		if (effects[HARMONIC_FOLD] > 0.0){
+			float limit = rescalef(clampf(effects[HARMONIC_FOLD], 0.0, 1.0), 0.0, 1.0, (float) WAVE_LEN / 2, 1.0);
+			int ilimit = (int) limit;
+			float ratio = 1.0 - fmod(limit, 1.0);
+			for (int i = 0; i < ilimit * 2; i++) {
+				tmp3[i] = tmp2[i];
+			};
+			for (int i = ilimit; i < WAVE_LEN / 2; i++){
+				int dst = i;
+				if (dst >= ilimit * 2)
+					dst = fmod(dst, ilimit * 2.0);
+				if (dst > ilimit)
+					dst = ilimit * 2 - dst;
+				tmp3[dst * 2] += tmp2[i * 2] * ratio;
+				tmp3[dst * 2 + 1] += tmp2[i * 2 + 1] * ratio;
+				tmp3[dst * 2 + 2] += tmp2[i * 2] * (1.0 - ratio);
+				tmp3[dst * 2 + 3] += tmp2[i * 2 + 1] * (1.0 - ratio);
+			};
+			tmp2 = tmp3;
 		}
 		IRFFT(tmp2, out, WAVE_LEN);
 	}
