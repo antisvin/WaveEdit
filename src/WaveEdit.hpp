@@ -186,6 +186,7 @@ struct Wave {
 	void applyAmplitudeModulation();
 	void applyPhaseModulation();
 	void applyFrequencyModulation();
+	void applySpectralTransfer();
 	/** Applies effects to the sample array and resets the effect parameters */
 	void bakeEffects();
 	void randomizeEffects();

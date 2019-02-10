@@ -312,6 +312,12 @@ static void menuWavesFM() {
 	historyPush();
 }
 
+static void menuWavesST() {
+	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
+		currentBank.waves[i].applySpectralTransfer();
+	}
+	historyPush();
+}
 
 static void menuMorphEffectsAll() {
 	int a = mini(selectedId, lastSelectedId);
@@ -372,10 +378,22 @@ static void menuKeyCommands() {
 			menuCopy();
 		if (ImGui::IsKeyPressed(SDLK_x) && !io.KeyShift && !io.KeyAlt)
 			menuCut();
-		if (ImGui::IsKeyPressed(SDLK_v) && !io.KeyShift && !io.KeyAlt)
-			menuPaste();
 		if (ImGui::IsKeyPressed(SDLK_d) && !io.KeyShift && !io.KeyAlt)
 			menuDuplicateToRow();
+		if (clipboardActive) {
+			if (ImGui::IsKeyPressed(SDLK_v) && !io.KeyShift && !io.KeyAlt)
+				menuPaste();
+			if (ImGui::IsKeyPressed(SDLK_1) && !io.KeyShift && !io.KeyAlt)
+				menuWavesAM();
+			if (ImGui::IsKeyPressed(SDLK_2) && !io.KeyShift && !io.KeyAlt)
+				menuWavesRM();
+			if (ImGui::IsKeyPressed(SDLK_3) && !io.KeyShift && !io.KeyAlt)
+				menuWavesPM();
+			if (ImGui::IsKeyPressed(SDLK_4) && !io.KeyShift && !io.KeyAlt)
+				menuWavesFM();
+			if (ImGui::IsKeyPressed(SDLK_5) && !io.KeyShift && !io.KeyAlt)
+				menuWavesST();
+		}
 	}
 	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
 	// It looks like SDLZ_F1 is not defined correctly or something.
@@ -439,17 +457,20 @@ void renderWaveMenu() {
 	if (ImGui::MenuItem("Randomize Effects", "R")) {
 		menuRandomize();
 	}
-	if (ImGui::MenuItem("Amplitude Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+M" : "Ctrl+M", false, clipboardActive)) {
+	if (ImGui::MenuItem("Amplitude Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+1" : "Ctrl+1", false, clipboardActive)) {
 		menuWavesAM();
 	}
-	if (ImGui::MenuItem("Ring Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+R" : "Ctrl+R", false, clipboardActive)) {
+	if (ImGui::MenuItem("Ring Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+2" : "Ctrl+2", false, clipboardActive)) {
 		menuWavesRM();
 	}
-	if (ImGui::MenuItem("Phase Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+P" : "Ctrl+P", false, clipboardActive)) {
+	if (ImGui::MenuItem("Phase Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+3" : "Ctrl+3", false, clipboardActive)) {
 		menuWavesPM();
 	}
-	if (ImGui::MenuItem("Frequency Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+F" : "Ctrl+F", false, clipboardActive)) {
+	if (ImGui::MenuItem("Frequency Modulation", ImGui::GetIO().OSXBehaviors ? "Cmd+4" : "Ctrl+4", false, clipboardActive)) {
 		menuWavesFM();
+	}
+	if (ImGui::MenuItem("Spectral Transfer", ImGui::GetIO().OSXBehaviors ? "Cmd+5" : "Ctrl+5", false, clipboardActive)) {
+		menuWavesST();
 	}
 	if (ImGui::MenuItem("Morph All Effects", "A")) {
 		menuMorphEffectsAll();

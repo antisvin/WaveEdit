@@ -453,6 +453,19 @@ void Wave::applyFrequencyModulation() {
         updatePost();
 }
 
+void Wave::applySpectralTransfer() {
+	// Build the kernel in Fourier space
+	float fft[WAVE_LEN];
+	float kernel[WAVE_LEN];
+	RFFT(clipboardWave.samples, kernel, WAVE_LEN);
+	RFFT(samples, fft, WAVE_LEN);
+	for (int k = 0; k < WAVE_LEN / 2; k++) {
+		cmultf(&fft[2 * k], &fft[2 * k + 1], fft[2 * k], fft[2 * k + 1], kernel[2 * k], kernel[2 * k + 1]);
+	}
+	IRFFT(fft, samples, WAVE_LEN);
+	updatePost();
+}
+
 void ringModulation(float *carrier, const float *modulator, float index, float depth) {
 	const int oversample = 4;
 	float tmp[WAVE_LEN * oversample + 1];
