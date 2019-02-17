@@ -10,3 +10,6 @@
 [submodule "ext/osdialog"]
 	path = ext/osdialog
 	url = https://github.com/AndrewBelt/osdialog.git
+[submodule "ext/midifile"]
+	path = ext/midifile
+	url = https://github.com/craigsapp/midifile.git

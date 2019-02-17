@@ -1,6 +1,6 @@
 VERSION = 1.1
 
-VALID_WT_FORMATS := WAVEEDIT PHMK2
+VALID_WT_FORMATS := WAVEEDIT PHMK2 BLOFELD
 WT_FORMAT ?= WAVEEDIT
 ifeq ($(filter $(VALID_WT_FORMATS),$(WT_FORMAT)),)
 $(error $(WT_FORMAT) must be one of "$(VALID_WT_FORMATS)", not "$(WT_FORMAT)")
@@ -57,6 +57,17 @@ info.o: info.rc
 endif
 
 
+# Format-specific
+ifeq ($(WT_FORMAT), BLOFELD)
+	SOURCES += ext/midifile/src-library/Binasc.cpp \
+		ext/midifile/src-library/MidiEvent.cpp \
+		ext/midifile/src-library/MidiEventList.cpp \
+		ext/midifile/src-library/MidiFile.cpp \
+		ext/midifile/src-library/MidiMessage.cpp
+	FLAGS += -Iext/midifile/include
+endif
+
+
 .DEFAULT_GOAL := build
 build: WaveEdit
 
@@ -95,6 +106,7 @@ ifeq ($(ARCH),lin)
 	cp dep/lib/libsndfile.so.1 dist/WaveEdit
 	cp dep/lib/libjansson.so.4 dist/WaveEdit
 	cp dep/lib/libcurl.so.4 dist/WaveEdit
+	cp dep/lib/libmidifile.so dist/WaveEdit
 else ifeq ($(ARCH),mac)
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources

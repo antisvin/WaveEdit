@@ -223,7 +223,40 @@ static void menuSaveRom() {
 	if (lastFilename[0] != '\0')
 		currentBank.saveROM(lastFilename);
 	else
-		menuSaveBankAs();
+		menuSaveRomAs();
+}
+#endif
+
+#if WAVETABLE_FORMAT_BLOFELD
+static void menuOpenBlofeldWavetable() {
+	char *dir = getLastDir();
+	char *path = osdialog_file(OSDIALOG_OPEN, dir, NULL, NULL);
+	if (path) {
+		showCurrentBankPage();
+		currentBank.loadBlofeldWavetable(path);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+		historyPush();
+		free(path);
+	}
+	free(dir);
+}
+
+static void menuSaveBlofeldWavetableAs() {
+	char *dir = getLastDir();
+	char *path = osdialog_file(OSDIALOG_SAVE, dir, "Untitled.mid", NULL);
+	if (path) {
+		currentBank.saveBlofeldWavetable(path);
+		snprintf(lastFilename, sizeof(lastFilename), "%s", path);
+		free(path);
+	}
+	free(dir);
+}
+
+static void menuSaveBlofeldWavetable() {
+	if (lastFilename[0] != '\0')
+		currentBank.saveBlofeldWavetable(lastFilename);
+	else
+		menuSaveBlofeldWavetableAs();
 }
 #endif
 
@@ -366,6 +399,15 @@ static void menuKeyCommands() {
 		if (ImGui::IsKeyPressed(SDLK_m) && io.KeyShift && !io.KeyAlt)
 			menuSaveRomAs();
 		#endif
+		#if WAVETABLE_FORMAT_BLOFELD
+		if (ImGui::IsKeyPressed(SDLK_r) && !io.KeyShift && !io.KeyAlt)
+			menuOpenBlofeldWavetable();
+		if (ImGui::IsKeyPressed(SDLK_m) && !io.KeyShift && !io.KeyAlt)
+			menuSaveBlofeldWavetable();
+		if (ImGui::IsKeyPressed(SDLK_m) && io.KeyShift && !io.KeyAlt)
+			menuSaveBlofeldWavetableAs();
+		#endif
+
 		if (ImGui::IsKeyPressed(SDLK_q) && !io.KeyShift && !io.KeyAlt)
 			menuQuit();
 		if (ImGui::IsKeyPressed(SDLK_z) && !io.KeyShift && !io.KeyAlt)
@@ -571,6 +613,14 @@ void renderMenu() {
 				menuSaveRom();
 			if (ImGui::MenuItem("Save Rom As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+M" : "Ctrl+Shift+M"))
 				menuSaveRomAs();
+			#endif
+			#ifdef WAVETABLE_FORMAT_BLOFELD
+			if (ImGui::MenuItem("Open Blofeld Wavetable...", ImGui::GetIO().OSXBehaviors ? "Cmd+R" : "Ctrl+R"))
+				menuOpenBlofeldWavetable();
+			if (ImGui::MenuItem("Save Blofeld Wavetable", ImGui::GetIO().OSXBehaviors ? "Cmd+M" : "Ctrl+M"))
+				menuSaveBlofeldWavetable();
+			if (ImGui::MenuItem("Save Blofeld Wavetable As...", ImGui::GetIO().OSXBehaviors ? "Cmd+Shift+M" : "Ctrl+Shift+M"))
+				menuSaveBlofeldWavetableAs();
 			#endif
 			if (ImGui::MenuItem("Quit", ImGui::GetIO().OSXBehaviors ? "Cmd+Q" : "Ctrl+Q"))
 				menuQuit();

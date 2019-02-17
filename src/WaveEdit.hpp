@@ -127,7 +127,11 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 // wave.cpp
 ////////////////////
 
+#ifdef WAVETABLE_FORMAT_BLOFELD
+#define WAVE_LEN 128
+#else
 #define WAVE_LEN 256
+#endif
 
 
 enum EffectID {
@@ -219,6 +223,11 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 #define HEX_LINE_WIDTH 32
 // This is width of actual data per HEX file line, currently hardcoded to avoid proper file parsing
 
+#elif WAVETABLE_FORMAT_BLOFELD
+#define BANK_LEN 64
+#define BANK_GRID_WIDTH 8
+#define BANK_GRID_HEIGHT 8
+
 #endif
 
 struct Bank {
@@ -243,6 +252,10 @@ struct Bank {
 	/** ROM file with BANK_LEN * WAVE_LEN samples */
 	void saveROM(const char *filename);
 	void loadROM(const char *filename);
+#endif
+#if WAVETABLE_FORMAT_BLOFELD
+	void saveBlofeldWavetable(const char *filename);
+	void loadBlofeldWavetable(const char *filename);
 #endif
 };
 

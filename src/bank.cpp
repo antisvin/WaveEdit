@@ -2,6 +2,14 @@
 #include <string.h>
 #include <sndfile.h>
 
+#ifdef WAVETABLE_FORMAT_BLOFELD
+#include <libgen.h>
+#include <numeric>
+#include "MidiFile.h"
+#include "MidiEvent.h"
+using namespace smf;
+#endif
+
 
 void Bank::clear() {
 	// The lazy way
@@ -139,7 +147,7 @@ void Bank::saveROM(const char *filename) {
 			strcat(line, index);
 			strcat(line, "00");
 			for (int k = 0; k < HEX_LINE_WIDTH / 2; k++) {
-				sprintf(byte, "%02X", (uint8_t) rescalef(waves[i].samples[j * HEX_LINE_WIDTH / 2 + k], -1.0, 1.0, 0.0, 255.0));
+				sprintf(byte, "%02X", (uint8_t) rescalef(waves[i].postSamples[j * HEX_LINE_WIDTH / 2 + k], -1.0, 1.0, 0.0, 255.0));
 				strcat(line, byte);
 			};
 			checksum = 0;
@@ -197,3 +205,102 @@ void Bank::loadROM(const char *filename) {
 }
 #endif
 
+#if WAVETABLE_FORMAT_BLOFELD
+void Bank::saveBlofeldWavetable(const char *filename){
+	MidiFile outfile(filename);
+	outfile.clear();
+	outfile.setTicksPerQuarterNote(100);
+	
+	int slot = 0;
+	char *fn = strdup(filename);
+	char *base = basename(fn);
+	free(fn);
+	char name[15] = "              ";
+	if (strlen(base) > 1) {
+		int first_char = 0;
+		if (base[0] >= '0' && base[0] <= '9' && base[1] >= '0' && base[1] <= '9') {
+			char buf[3];
+			strncpy(buf, base, 2);
+			buf[2] = '\0';
+			slot = atoi(buf);
+			slot = mini(38, slot);
+			first_char = 2;
+		};
+		for (int i = first_char; i < mini(first_char + 14, strlen(base)); i++){
+			if (base[i] == '.')
+				break;
+			name[i - first_char] = base[i];
+		}
+	}
+	else {
+		strcpy(name, "Untitled      ");
+	};
+	
+	for (int wave = 0; wave < BANK_LEN; wave++) {
+		std::vector<uchar> mm(410);
+		mm[0] = 0xf0; // SysEx
+		mm[1] = 0x3e; // Waldorf ID
+		mm[2] = 0x13; // Blofeld ID
+		mm[3] = 0x00; // Device ID
+		mm[4] = 0x12; // Wavetable Dump
+		mm[5] = 0x50 + slot; // Wavetable Number
+		mm[6] = wave & 0x7f; // Wave Number
+		mm[7] = 0x00; // Format
+		printf("%x %x %x %x %x %x %x %x\n", mm[0], mm[1], mm[2], mm[3], mm[4], mm[5], mm[6], mm[7]);
+		//f0 3e 13 0 12 50 11 0
+
+		// actual samples
+		for (int i = 0; i < WAVE_LEN; i++){
+			int32_t sample = (int32_t) ((clampf(waves[wave].postSamples[i], -1.0, 1.0)) * 1048575.0);
+			mm[8  + 3 * i] = (sample >> 14) & 0x7f;
+			mm[9  + 3 * i] = (sample >>  7) & 0x7f;
+			mm[10 + 3 * i] = (sample      ) & 0x7f;
+		}
+
+		// wavetable name
+		for (int i = 0; i < 14; i++){
+			mm[392 + i] = name[i] & 0x7f;
+		}
+
+		mm[406] = 0x0; // Reserved
+		mm[407] = 0x0; // Reserved
+
+		int checksum = std::accumulate(mm.begin() + 7, mm.begin() + 407, 0);
+		printf("%i\n", checksum);
+		mm[408] = checksum & 0x7f;
+		mm[409] = 0xf7; // End
+
+		outfile.addEvent(0, wave, mm);
+	}
+
+	outfile.write(filename);
+	
+};
+
+void Bank::loadBlofeldWavetable(const char *filename){
+	MidiFile infile(filename);
+	float samples[WAVE_LEN] = {};
+	int wave = 0;
+	for (int i = 0; i < infile.getEventCount(0) && wave < BANK_LEN; i++) {
+		MidiEvent event = infile.getEvent(0, i);
+		printf("%x %x %x %x %x %x %x %x\n", event[0], event[1], event[2], event[3], event[4], event[5], event[6], event[7]);
+		if (event[0] != 0xf0 || event[1] != 0x3e || event[2] != 0x13 || event[3] != 0x00 || event[4] != 0x12)
+			continue;
+		for (int j = 0; j < WAVE_LEN; j++){
+			int32_t sample = (
+				((int32_t)(event[8  + 3 * j]) << 14) |
+				((int32_t)(event[9  + 3 * j]) << 7) |
+				((int32_t)(event[10 + 3 * j]))
+			);
+			if (sample &  0x00100000) 
+				sample |= 0xfff00000;
+			waves[wave].samples[j] = clampf(((float) sample) / 1048575.0, -1.0, 1.0);
+			if (wave == 0) printf("%i %x,%x,%x %i %f\n", j, event[8 + 3 * j], event[9 + 3 * j], event[10 + 3 * j], sample, waves[wave].samples[j]);
+		}
+		
+		int checksum = std::accumulate(event.begin() + 7, event.begin() + 407, 0);
+		waves[wave].commitSamples();
+		wave++;
+	}
+};
+#endif
