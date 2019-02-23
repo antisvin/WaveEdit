@@ -42,11 +42,18 @@ void Wave::updatePost() {
 	float out[WAVE_LEN];
 	memcpy(out, samples, sizeof(float) * WAVE_LEN);
 
-	// Pre-gain
+	// Pre-gain with saturation / soft clipping
 	if (effects[PRE_GAIN]) {
 		float gain = powf(20.0, effects[PRE_GAIN]);
+		float tmp[WAVE_LEN];
+		memcpy(tmp, out, sizeof(float) * WAVE_LEN);
 		for (int i = 0; i < WAVE_LEN; i++) {
 			out[i] *= gain;
+			if (fabs(out[i]) >= 1.0)
+				out[i] = clampf(out[i], -2.0 / 3.0, 2.0 / 3.0);
+			else
+				out[i] *= (1 - out[i] * out[i] / 3.0);
+			out[i] = crossf(tmp[i], out[i] * 1.5, effects[PRE_GAIN]);
 		}
 	}
 
@@ -301,12 +308,18 @@ void Wave::updatePost() {
 		amplitudeModulation(out, out, rescalef(clampf(effects[MODULATION_INDEX], 0.0, 1.0), 0.0, 1.0, 1.0, 9.0), clampf(effects[AMPLITUDE_FEEDBACK], 0.0, 1.0));
 	}
 	
-	// TODO Consider removing because Normalize does this for you
-	// Post gain
+	// Post gain with saturation / soft clipping
 	if (effects[POST_GAIN]) {
 		float gain = powf(20.0, effects[POST_GAIN]);
+		float tmp[WAVE_LEN];
+		memcpy(tmp, out, sizeof(float) * WAVE_LEN);
 		for (int i = 0; i < WAVE_LEN; i++) {
 			out[i] *= gain;
+			if (fabs(out[i]) >= 1.0)
+				out[i] = clampf(out[i], -2.0 / 3.0, 2.0 / 3.0);
+			else
+				out[i] *= (1 - out[i] * out[i] / 3.0);
+			out[i] = crossf(tmp[i], out[i] * 1.5, effects[POST_GAIN]);
 		}
 	}
 
