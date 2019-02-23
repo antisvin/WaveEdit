@@ -30,6 +30,9 @@ const char *effectNames[EFFECTS_LEN] {
 	"Ring Modulation Feedback",
 	"Amplitude Modulation Feedback",
 	"Modulation Index",
+	"Low Boost",
+	"Mid Boost",
+	"High Boost",
 	"Post-Gain",
 };
 
@@ -193,21 +196,6 @@ void Wave::updatePost() {
 		IRFFT(fft, out, WAVE_LEN);
 	}
 
-	// Ring modulation
-	/*
-	if (effects[RING] > 0.0) {
-		float ring1 = ceilf(powf(effects[RING], 2) * (WAVE_LEN / 2 - 3));
-		float ring2 = ring1 + 1;
-		float ring_diff = ring1 - powf(effects[RING], 2) * (WAVE_LEN / 2 - 2);
-		for (int i = 0; i < WAVE_LEN; i++) {
-			float phase1 = (float)i / WAVE_LEN * ring1;
-			float phase2 = (float)i / WAVE_LEN * ring2;
-			printf("%f %f %f %f %f\n", ring1, ring2, ring_diff, phase1, phase2);
-			out[i] *= sinf(2 * M_PI * phase1) * ring_diff + sinf(2 * M_PI * phase2) * (1 - ring_diff);
-		}
-	}
-	*/
-
 	// Chebyshev waveshaping
 	if (effects[CHEBYSHEV] > 0.0) {
 		float n = powf(50.0, effects[CHEBYSHEV]);
@@ -306,6 +294,44 @@ void Wave::updatePost() {
 	// Amplitude Feedback
 	if (effects[AMPLITUDE_FEEDBACK] > 0.0) {
 		amplitudeModulation(out, out, rescalef(clampf(effects[MODULATION_INDEX], 0.0, 1.0), 0.0, 1.0, 1.0, 9.0), clampf(effects[AMPLITUDE_FEEDBACK], 0.0, 1.0));
+	}
+	
+	if (effects[LOW_BOOST] > 0.0 || effects[MID_BOOST] > 0.0 || effects[HIGH_BOOST] > 0.0) {
+		// Generate boost factors for every harmonic
+		float boost[WAVE_LEN / 2];
+		const float boost_level = 4.0;
+		for (int i = 0; i < WAVE_LEN / 2; i++)
+			boost[i] = 1.0;
+		// The lower harmonic, the higher is its boost factor and only lowest half of spectrum is boosted.
+		if (effects[LOW_BOOST] > 0.0)
+			for (int i = 0; i < WAVE_LEN / 4; i++)
+				boost[i] += boost_level * effects[LOW_BOOST] * (WAVE_LEN / 4 - i) / WAVE_LEN * 4.0;
+		// The higher harmonic, the higher is its boost factor and only highest half of spectrum is boosted
+		if (effects[HIGH_BOOST] > 0.0)
+			for (int i = WAVE_LEN / 4; i < WAVE_LEN / 2; i++)
+				boost[i] += boost_level * effects[HIGH_BOOST] * (1 + i - WAVE_LEN / 4) / WAVE_LEN * 4.0;
+		// The closer harmonic is to the center, the higher is its boost factor. All spectrum is boosted.
+		// This effect is applied after the previous too and takes their boost into consideration.
+		if (effects[MID_BOOST] > 0.0) {
+			for (int i = 0; i < WAVE_LEN / 4; i++){
+				boost[i] *= (1 + boost_level * effects[MID_BOOST] * (i + 1) / WAVE_LEN * 4.0);
+			};
+			for (int i = WAVE_LEN / 4; i < WAVE_LEN / 2; i++){
+				boost[i] *= (1 + boost_level * effects[MID_BOOST] * (WAVE_LEN / 2 - i) / WAVE_LEN * 4.0);
+			}
+		}
+		// FFT transform
+		float fft[WAVE_LEN];
+		RFFT(out, fft, WAVE_LEN);
+		
+		// Multiply harmonics by boost factors
+		for (int i = 0; i < WAVE_LEN / 2; i++) {
+			fft[i * 2] *= boost[i];
+			fft[i * 2 + 1] *= boost[i];
+		}
+
+		// Reverse FFT transform
+		IRFFT(fft, out, WAVE_LEN);
 	}
 	
 	// Post gain with saturation / soft clipping
