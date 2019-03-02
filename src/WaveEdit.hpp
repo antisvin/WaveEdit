@@ -7,7 +7,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include <string>
+#include <string.h>
 #include <thread>
 #include <vector>
 #include <complex>
@@ -81,6 +81,26 @@ inline float linterpf(const float *p, float x) {
 	else
 		return crossf(p[xi], p[xi + 1], xf);
 	*/
+}
+
+
+inline void normalize_array(float *data, int size, float new_min, float new_max, float empty) {
+	float max = -INFINITY;
+	float min = INFINITY;
+	for (int i = 0; i < size; i++) {
+		if (data[i] > max) max = data[i];
+		if (data[i] < min) min = data[i];
+	}
+
+	if (max - min >= 1e-6) {
+		for (int i = 0; i < size; i++) {
+			data[i] = rescalef(data[i], min, max, new_min, new_max);
+		}
+	}
+	else {
+		memset(data, empty, sizeof(float) * size);
+		memset(data, empty, sizeof(float) * size);
+	}
 }
 
 /** Returns a random number on [0, 1) */
@@ -211,6 +231,61 @@ void amplitudeModulation(float *carrier, const float *modulator, float index, fl
 void phaseModulation(float *carrier, const float *modulator, float index, float depth);
 void frequencyModulation(float *carrier, const float *modulator, float index, float depth);
 
+
+////////////////////
+// basewave.cpp
+////////////////////
+
+enum WaveShapeID {
+	EMPTY,
+	DOUBLE_SINE,
+	MULTI_SINE,
+	TRIANGLE,
+	DOUBLE_TRIANGLE,
+	SAW,
+	DOUBLE_SAW,
+	TRAPEZOID,
+	DOUBLE_TRAPEZOID,
+	SQUARE,
+	DOUBLE_SQUARE,
+	PULSE,
+	DOUBLE_PULSE,
+	WAVE_SHAPES_LEN
+};
+
+extern const char *waveShapeName[WAVE_SHAPES_LEN];
+
+
+struct BaseWave {
+	//WaveShapeID lower_shape, upper_shape;
+	float lower_shape;
+	float upper_shape;
+	float brightness;
+	float bottom_angle;
+	float bottom_magnitude;
+	float top_angle;
+	float top_magnitude;
+	float bezier_ratio;
+	float bezier_weight;
+	float resonance;
+	
+	float samples[WAVE_LEN];
+	float shape[WAVE_LEN];
+	float phasor[WAVE_LEN];
+	
+	void clear();
+	void updateShape();
+	void updatePhasor();
+	void generateSamples();
+	void commitSamples();
+	void commitShape();
+	void commitPhasor();
+	void updateSamples();
+	
+	float getShape(WaveShapeID shape, float phase);
+};
+
+
 ////////////////////
 // bank.cpp
 ////////////////////
@@ -235,6 +310,7 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 
 struct Bank {
 	Wave waves[BANK_LEN];
+	BaseWave base_wave;
 
 	void clear();
 	void swap(int i, int j);
@@ -339,6 +415,7 @@ enum Tool {
 
 
 bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
+bool renderPhasor(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
 bool renderHistogram(const char *name, float height, float *bars, int barsLen, const float *ghost, int ghostLen, enum Tool tool);
 void renderBankGrid(const char *name, float height, int gridWidth, float *gridX, float *gridY);
 void renderWaterfall(const char *name, float height, float amplitude, float angle, float *activeZ);
@@ -346,6 +423,8 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 Returns the relative amount dragged
 */
 float renderBankWave(const char *name, float height, const float *lines, int linesLen, float bankStart, float bankEnd, int bankLen);
+void renderBaseWave(const char *name, float height, float lower_shape, float upper_shape, float shape_brightness, float phasor_shape, float phasor_angle, float phasor_level, float resonance);
+
 
 ////////////////////
 // ui.cpp

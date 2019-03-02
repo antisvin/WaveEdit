@@ -154,7 +154,6 @@ static bool editorBehavior(ImGuiID id, const ImRect& box, const ImRect& inner, f
 	return false;
 }
 
-
 bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
@@ -205,6 +204,73 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	if (points) {
 		for (int i = 0; i < pointsLen; i++) {
 			ImVec2 pos = ImVec2(rescalef(i, 0, pointsLen, inner.Min.x, inner.Max.x), rescalef(points[i], 1.0, -1.0, inner.Min.y, inner.Max.y));
+			window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 2.0, ImGui::GetColorU32(ImGuiCol_PlotLines), 12);
+		}
+	}
+	// Draw grid
+	drawGrid(inner, pointsLen);
+
+	ImGui::PopClipRect();
+
+	return edited;
+}
+
+
+bool renderPhasor(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool) {
+	ImGuiContext &g = *GImGui;
+	ImGuiWindow *window = ImGui::GetCurrentWindow();
+	const ImGuiStyle &style = g.Style;
+	const ImGuiID id = window->GetID(name);
+
+	// Compute positions
+	ImVec2 size = ImVec2(ImGui::CalcItemWidth(), height);
+	ImRect box = ImRect(window->DC.CursorPos, window->DC.CursorPos + size);
+	ImRect inner = ImRect(box.Min + style.FramePadding, box.Max - style.FramePadding);
+	ImGui::ItemSize(box, style.FramePadding.y);
+	if (!ImGui::ItemAdd(box, NULL))
+		return false;
+
+	// Draw frame
+	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
+
+	// // Tooltip
+	// if (ImGui::IsHovered(box, 0)) {
+	// 	ImVec2 mousePos = ImGui::GetMousePos();
+	// 	float x = rescalef(mousePos.x, inner.Min.x, inner.Max.x, 0, pointsLen-1);
+	// 	int xi = (int)clampf(x, 0, pointsLen-2);
+	// 	float xf = x - xi;
+	// 	float y = crossf(values[xi], values[xi+1], xf);
+	// 	ImGui::SetTooltip("%f, %f\n", x, y);
+	// }
+
+	// const bool hovered = ImGui::IsHovered(box, id);
+	// if (hovered) {
+	// 	ImGui::SetHoveredID(id);
+	// 	ImGui::SetActiveID(id, window);
+	// }
+
+	bool edited = editorBehavior(id, box, inner, points, pointsLen, 0.0, pointsLen - 1, 1.0, 0.0, tool);
+
+	ImGui::PushClipRect(box.Min, box.Max, true);
+	// Draw lines
+	if (lines) {
+		ImVec2 lastPos;
+		ImVec2 firstPos;
+		for (int i = 0; i < linesLen; i++) {
+			ImVec2 pos = ImVec2(rescalef(i, 0, linesLen, inner.Min.x, inner.Max.x), rescalef(lines[i], 1.0, 0.0, inner.Min.y, inner.Max.y));
+			if (i == 0)
+				firstPos = pos;
+			else
+				window->DrawList->AddLine(lastPos, pos, ImGui::GetColorU32(ImGuiCol_PlotLines));
+			lastPos = pos;
+		}
+		firstPos.x = inner.Max.x;
+		window->DrawList->AddLine(lastPos, firstPos, ImGui::GetColorU32(ImGuiCol_PlotLines));
+	}
+	// Draw points
+	if (points) {
+		for (int i = 0; i < pointsLen; i++) {
+			ImVec2 pos = ImVec2(rescalef(i, 0, pointsLen, inner.Min.x, inner.Max.x), rescalef(points[i], 1.0, 0.0, inner.Min.y, inner.Max.y));
 			window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 2.0, ImGui::GetColorU32(ImGuiCol_PlotLines), 12);
 		}
 	}
@@ -612,3 +678,6 @@ float renderBankWave(const char *name, float height, const float *lines, int lin
 	return delta;
 }
 
+
+void renderBaseWave(const char *name, float height, float lower_shape, float upper_shape, float shape_brightness, float phasor_shape, float phasor_angle, float phasor_level, float resonance){
+}

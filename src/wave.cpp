@@ -360,23 +360,8 @@ void Wave::updatePost() {
 	}
 
 	// Normalize
-	if (normalize) {
-		float max = -INFINITY;
-		float min = INFINITY;
-		for (int i = 0; i < WAVE_LEN; i++) {
-			if (out[i] > max) max = out[i];
-			if (out[i] < min) min = out[i];
-		}
-
-		if (max - min >= 1e-6) {
-			for (int i = 0; i < WAVE_LEN; i++) {
-				out[i] = rescalef(out[i], min, max, -1.0, 1.0);
-			}
-		}
-		else {
-			memset(out, 0, sizeof(float) * WAVE_LEN);
-		}
-	}
+	if (normalize)
+		normalize_array(out, WAVE_LEN, -1.0, 1.0, 0.0);
 
 	// Hard clip :(
 	for (int i = 0; i < WAVE_LEN; i++) {
