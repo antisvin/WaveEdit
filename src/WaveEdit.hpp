@@ -258,15 +258,13 @@ extern const char *waveShapeName[WAVE_SHAPES_LEN];
 
 struct BaseWave {
 	//WaveShapeID lower_shape, upper_shape;
-	float lower_shape;
-	float upper_shape;
+	float lower_shape, upper_shape;
 	float brightness;
-	float bottom_angle;
-	float bottom_magnitude;
-	float top_angle;
-	float top_magnitude;
-	float bezier_ratio;
-	float bezier_weight;
+	float bottom_angle, bottom_magnitude;
+	float bottom_x, bottom_y;
+	float top_angle, top_magnitude;
+	float top_x, top_y;
+	float bezier_ratio, bezier_weight;
 	float resonance;
 	
 	float samples[WAVE_LEN];
@@ -283,6 +281,7 @@ struct BaseWave {
 	void updateSamples();
 	
 	float getShape(WaveShapeID shape, float phase);
+	float harmonics[WAVE_LEN / 2];
 };
 
 
@@ -415,7 +414,7 @@ enum Tool {
 
 
 bool renderWave(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
-bool renderPhasor(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool = NO_TOOL);
+bool renderPhasor(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool, float bottom_x, float bottom_y, float bottom_magnitude, float top_x, float top_y, float top_magnitude);
 bool renderHistogram(const char *name, float height, float *bars, int barsLen, const float *ghost, int ghostLen, enum Tool tool);
 void renderBankGrid(const char *name, float height, int gridWidth, float *gridX, float *gridY);
 void renderWaterfall(const char *name, float height, float amplitude, float angle, float *activeZ);

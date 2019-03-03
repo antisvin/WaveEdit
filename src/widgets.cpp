@@ -216,7 +216,7 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 }
 
 
-bool renderPhasor(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool) {
+bool renderPhasor(const char *name, float height, float *points, int pointsLen, const float *lines, int linesLen, enum Tool tool, float bottom_x, float bottom_y, float bottom_magnitude, float top_x, float top_y, float top_magnitude) {
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 	const ImGuiStyle &style = g.Style;
@@ -252,6 +252,21 @@ bool renderPhasor(const char *name, float height, float *points, int pointsLen, 
 	bool edited = editorBehavior(id, box, inner, points, pointsLen, 0.0, pointsLen - 1, 1.0, 0.0, tool);
 
 	ImGui::PushClipRect(box.Min, box.Max, true);
+	
+	// Draw angle markers
+	if (bottom_magnitude > 0.0) {
+		ImVec2 pos = ImVec2(rescalef(bottom_x, 0.0, 1.0, inner.Min.x, inner.Max.x), rescalef(bottom_y, 1.0, 0.0, inner.Min.y, inner.Max.y));
+		window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 4.0, ImGui::GetColorU32(ImGuiCol_PlotHistogram), 12);
+		window->DrawList->AddLine(pos, ImVec2(inner.Min.x, inner.Max.y),  ImGui::GetColorU32(ImGuiCol_PlotHistogram), 2.0);
+
+	}
+	
+	if (top_magnitude > 0.0) {
+		ImVec2 pos = ImVec2(rescalef(top_x, 0.0, 1.0, inner.Min.x, inner.Max.x), rescalef(top_y, 1.0, 0.0, inner.Min.y, inner.Max.y));
+		window->DrawList->AddCircleFilled(pos + ImVec2(0.5, 0.5), 4.0, ImGui::GetColorU32(ImGuiCol_PlotHistogram), 12);
+		window->DrawList->AddLine(pos, ImVec2(inner.Max.x, inner.Min.y),  ImGui::GetColorU32(ImGuiCol_PlotHistogram), 2.0);
+	}
+	
 	// Draw lines
 	if (lines) {
 		ImVec2 lastPos;

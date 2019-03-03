@@ -25,8 +25,12 @@ void BaseWave::clear() {
 	brightness = 0.0;
 	bottom_angle = 0.0;
 	bottom_magnitude = 0.0;
+	bottom_x = 0.0;
+	bottom_y = 0.0;
 	top_angle = 0.0;
 	top_magnitude = 0.0;
+	top_x = 0.0;
+	top_y = 0.0;
 	bezier_ratio = 0.0;
 	bezier_weight = 0.0;
 	updateShape();
@@ -66,13 +70,16 @@ void BaseWave::updateShape() {
 
 
 float BaseWave::getShape(WaveShapeID shape, float phase) {
+	int n;
 	switch (shape) {
 		case EMPTY:
 			return -1.0f;
 		case DOUBLE_SINE:
 			return sin(-0.5 * M_PI + 4 * M_PI * phase);
 		case MULTI_SINE:
-			return sin(-12.5 * M_PI + 30 * M_PI * phase);
+			n = 1 + brightness * 20;
+			return -cos(2 * n * M_PI * phase);
+			//return sin((n - 0.5) * M_PI + 2 * n * M_PI * phase);
 		case TRIANGLE:
 			return (phase >= 0.5) ? rescalef(phase, 0.5, 1.0, 1.0, -1.0) : rescalef(phase, 0.0, 0.5, -1.0, 1.0);
 		case DOUBLE_TRIANGLE:
@@ -110,19 +117,19 @@ void BaseWave::updatePhasor() {
 	// Start point is implicitly created in 0, 0
 	
 	if (bottom_magnitude > 0.0) {
-		float l, a, b;
+		float l;
 		if (bottom_angle <= 0.5) {
 			l = bottom_magnitude / cos(bottom_angle * M_PI / 2.0);
-			a = l * sin(bottom_angle * M_PI / 2.0);
-			b = bottom_magnitude;
+			bottom_x = l * sin(bottom_angle * M_PI / 2.0);
+			bottom_y = bottom_magnitude;
 		}
 		else {
 			l = bottom_magnitude / sin(bottom_angle * M_PI / 2.0);
-			a = bottom_magnitude;
-			b = l * cos(bottom_angle * M_PI / 2.0);
+			bottom_x = bottom_magnitude;
+			bottom_y = l * cos(bottom_angle * M_PI / 2.0);
 		}
-		points[num_points * 2]     = a;
-		points[num_points * 2 + 1] = b;
+		points[num_points * 2]     = bottom_x;
+		points[num_points * 2 + 1] = bottom_y;
 		num_points++;
 	}
 	else {
@@ -134,19 +141,19 @@ void BaseWave::updatePhasor() {
 	
 	// Second point is calculated exactly the same as first, but it's orient relative to 1,1 point rather than 0,0
 	if (top_magnitude > 0.0) {
-		float l, a, b;
+		float l;
 		if (top_angle <= 0.5) {
 			l = top_magnitude / cos(top_angle * M_PI / 2.0);
-			a = l * sin(top_angle * M_PI / 2.0);
-			b = top_magnitude;
+			top_x = 1.0 - l * sin(top_angle * M_PI / 2.0);
+			top_y = 1.0 - top_magnitude;
 		}
 		else {
 			l = top_magnitude / sin(top_angle * M_PI / 2.0);
-			a = top_magnitude;
-			b = l * cos(top_angle * M_PI / 2.0);
+			top_x = 1.0 - top_magnitude;
+			top_y = 1.0 - l * cos(top_angle * M_PI / 2.0);
 		}
-		points[num_points * 2]     = 1.0 - a;
-		points[num_points * 2 + 1] = 1.0 - b;
+		points[num_points * 2]     = top_x;
+		points[num_points * 2 + 1] = top_y;
 		num_points++;
 	}
 	else {
@@ -227,7 +234,7 @@ void BaseWave::generateSamples() {
 			//a += step;
 			b += step * (1 + MAX_RESONANCE * resonance);
 			if (b >= 1.0)
-				b -= 1.0;
+				b = 0.0;
 			//fmod(a * (1 + MAX_RESONANCE * resonance), 1.0);
 		
 			c = linterpf(tmp, b * WAVE_LEN);
@@ -243,6 +250,13 @@ void BaseWave::generateSamples() {
 		
 	};
 	normalize_array(samples, WAVE_LEN, -1.0, 1.0, 0.0);
+	
+	// Convert wave to spectrum
+	RFFT(samples, tmp, WAVE_LEN);
+	// Convert spectrum to harmonics
+	for (int i = 0; i < WAVE_LEN / 2; i++) {
+		harmonics[i] = hypotf(tmp[2 * i], tmp[2 * i + 1]) * 2.0;
+	};
 	updateSamples();
 };
 

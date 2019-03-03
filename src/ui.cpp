@@ -1010,6 +1010,9 @@ void baseWavePage() {
 			historyPush();
 		}
 		
+		ImGui::Text("Harmonics");
+		float x[WAVE_LEN / 2] = {};
+		renderHistogram("Harmonics View", 200.0, wave->harmonics, WAVE_LEN / 2, nullptr, 0, NO_TOOL);
 		
 		ImGui::Text("Base Waveform");
 		float shapeOversample[WAVE_LEN * oversample];
@@ -1022,10 +1025,9 @@ void baseWavePage() {
 		ImGui::Text("Phasor");
 		float phasorBuf[WAVE_LEN];
 		memcpy(phasorBuf, wave->phasor, sizeof(float) * WAVE_LEN);
-		//phasorBuf[WAVE_LEN + 1] = phasorBuf[0];
 
 		//cyclicOversample(wave->phasor, phasorOversample, WAVE_LEN, oversample);
-		if (renderPhasor("PhasorEditor", 200.0, wave->phasor, WAVE_LEN, phasorBuf, WAVE_LEN, tool)) {
+		if (renderPhasor("PhasorEditor", 400.0, wave->phasor, WAVE_LEN, phasorBuf, WAVE_LEN, tool, wave->bottom_x, wave->bottom_y, wave->bottom_magnitude, wave->top_x, wave->top_y, wave->top_magnitude)) {
 			wave->commitPhasor();
 			historyPush();
 		}
