@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PolyBLEP.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -256,9 +257,24 @@ enum WaveShapeID {
 extern const char *waveShapeName[WAVE_SHAPES_LEN];
 
 
+#define WAVE_SHAPES_LEN 14
+
+class Oscillator : public PolyBLEP {
+public:
+	Oscillator () : PolyBLEP(WAVE_LEN / 2, PolyBLEP::SINE, 1.0) {};
+};
+
+extern Oscillator osc_a, osc_b;
+
 struct BaseWave {
-	//WaveShapeID lower_shape, upper_shape;
 	float lower_shape, upper_shape;
+	
+	/*
+	float lower_shape_a, lower_shape_b, upper_shape_a, upper_shape_b;
+	float lower_crossfade, upper_crossfade, lower_mult, upper_mult;
+	float lower_pulse_width, upper_pulse_width;
+	*/
+	
 	float brightness;
 	float bottom_angle, bottom_magnitude;
 	float bottom_x, bottom_y;
@@ -280,7 +296,8 @@ struct BaseWave {
 	void commitPhasor();
 	void updateSamples();
 	
-	float getShape(WaveShapeID shape, float phase);
+	float getShape(Oscillator *osc, Oscillator::Waveform waveform, float phase);
+	void generateShape(const float *shape_phasor, float *samples);
 	float harmonics[WAVE_LEN / 2];
 };
 

@@ -2,6 +2,10 @@
 #include <string.h>
 
 
+Oscillator osc_a, osc_b;
+
+/*
+
 const char *waveShapeNames[WAVE_SHAPES_LEN] {
 	"Empty",
 	"Double Sine",
@@ -16,12 +20,13 @@ const char *waveShapeNames[WAVE_SHAPES_LEN] {
 	"Pulse",
 	"Double Pulse",
 };
+*/
 
 
 void BaseWave::clear() {
 	memset(this, 0, sizeof(BaseWave));
-	lower_shape = EMPTY;
-	upper_shape = EMPTY;
+	lower_shape = Oscillator::SINE;
+	upper_shape = Oscillator::SINE;
 	brightness = 0.0;
 	bottom_angle = 0.0;
 	bottom_magnitude = 0.0;
@@ -39,20 +44,33 @@ void BaseWave::clear() {
 }
 
 
-void BaseWave::updateShape() {
+void BaseWave::updateShape() {	
+	float linear_phasor[WAVE_LEN];
+	for (int i = 0; i < WAVE_LEN; i++)
+		linear_phasor[i] = (float) i / WAVE_LEN;
+	generateShape(linear_phasor, shape);
+};
+
+void BaseWave::generateShape(const float *shape_phasor, float *samples) {
 	// Generate base wave shape using lower/upper wave shapes and brightness
-	float flshape = lower_shape * WAVE_SHAPES_LEN;
-	float fushape = upper_shape * WAVE_SHAPES_LEN;
+	float flshape = lower_shape * (WAVE_SHAPES_LEN - 1);
+	float fushape = upper_shape * (WAVE_SHAPES_LEN - 1); 
 	float flshape1 = floor(flshape);
 	float fushape1 = floor(fushape);
 	float flshape2 = fmod(flshape1 + 1.0, WAVE_SHAPES_LEN);
 	float fushape2 = fmod(fushape1 + 1.0, WAVE_SHAPES_LEN);
 	flshape = fmod(flshape, 1.0);
 	fushape = fmod(fushape, 1.0);
+	float phase;
+	//osc_a.sync(0.0);
+	//osc_b.sync(0.0);
+	
 	for (int i = 0; i < WAVE_LEN; i++) {
-		float phase = (float)i / WAVE_LEN;
+		phase = shape_phasor[i];
+		if (i == WAVE_LEN) phase = 0.0;
 		float fshape, fshape1, fshape2;
-		if (i < WAVE_LEN / 2) {
+		//if (i < WAVE_LEN / 2) {
+		if (phase < 0.5) {
 			fshape1 = flshape1;
 			fshape2 = flshape2;
 			fshape = flshape;
@@ -62,14 +80,21 @@ void BaseWave::updateShape() {
 			fshape2 = fushape2;
 			fshape = fushape;
 		};
-		fshape1 = getShape((WaveShapeID) (int) fshape1, phase);
-		fshape2 = getShape((WaveShapeID) (int) fshape2, phase);
-		shape[i] = crossf(fshape1, fshape2, fshape);
+		fshape1 = getShape(&osc_a, (Oscillator::Waveform) (int) fshape1, phase);
+		fshape2 = getShape(&osc_b, (Oscillator::Waveform) (int) fshape2, phase);
+		
+		samples[i] = crossf(fshape1, fshape2, fshape);
 	};
 };
 
 
-float BaseWave::getShape(WaveShapeID shape, float phase) {
+float BaseWave::getShape(Oscillator *osc, Oscillator::Waveform waveform, float phase) {
+	osc->setSampleRate(rescalef(brightness, 0.0, 1.0, WAVE_LEN / 4, WAVE_LEN));
+	osc->setWaveform(waveform);
+	osc->sync(fmod(phase + 0.75, 1.0));
+	return osc->getAndInc();
+		
+	/*
 	int n;
 	switch (shape) {
 		case EMPTY:
@@ -107,6 +132,7 @@ float BaseWave::getShape(WaveShapeID shape, float phase) {
 		default:
 			return sin(-0.5 * M_PI + 2 * M_PI * phase);
 	}
+	*/
 };
 
 
@@ -206,18 +232,30 @@ void BaseWave::updatePhasor() {
 };
 
 
-
-#define MAX_RESONANCE 4
-
+// Apply phasor to base wave shape
 void BaseWave::generateSamples() {
-	// Apply phasor to base wave shape with optional synced resonance.
-	const int oversample = 4;
+	const int MAX_RESONANCE = 4;
 	float tmp[WAVE_LEN + 1];
-	memcpy(tmp, shape, sizeof(float) * WAVE_LEN);
-	tmp[WAVE_LEN] = tmp[0];
-	//void cyclicOversample(const float *in, float *out, int len, int oversample);
-	//void cyclicUndersample(const float *in, float *out, int len, int undersample);
+	//memcpy(tmp, phasor, sizeof(float) * WAVE_LEN);
+	//tmp[WAVE_LEN] = tmp[0];
+	
+	float final_phasor[WAVE_LEN];
+	float tmp_samples[WAVE_LEN];
+	
 	if (resonance > 0.0) {
+		float phase = 0.0;
+		float sync_phase = 0.0;
+		for (int i = 0; i < WAVE_LEN; i++) {
+			final_phasor[i] = phasor[(int)(sync_phase * WAVE_LEN)];
+			//final_phasor[i] = linterpf(phasor, sync_phase * WAVE_LEN);
+//			samples[i] = linterpf(tmp, phasor[(int)(sync_phase * WAVE_LEN)] * WAVE_LEN);
+			phase += 1.0 / WAVE_LEN;
+			sync_phase += 1.0 / WAVE_LEN * (1 + MAX_RESONANCE * resonance);
+			if (sync_phase >= 1.0)
+				sync_phase -= 1.0;
+				
+		}
+		/*
 		for (int i = 0; i < WAVE_LEN + 1; i++) {
 			tmp[i] = rescalef(tmp[i], -1.0, 1.0, 0.0, 1.0);
 		};
@@ -243,20 +281,34 @@ void BaseWave::generateSamples() {
 			e = c * d;
 			samples[i] = rescalef(e, 0.0, 1.0, -1.0, 1.0);
 		};
+		*/
 	}
 	else {
-		for (int i = 0; i < WAVE_LEN; i++)
-			samples[i] = linterpf(tmp, phasor[i] * WAVE_LEN);
+		memcpy(final_phasor, phasor, sizeof(float) * WAVE_LEN);
+		//for (int i = 0; i < WAVE_LEN; i++)
+		//	samples[i] = linterpf(tmp, phasor[i] * WAVE_LEN);
 		
 	};
-	normalize_array(samples, WAVE_LEN, -1.0, 1.0, 0.0);
+	
+	generateShape(final_phasor, tmp_samples);
+	
+	if (resonance > 0.0) {
+		for (int i = 0; i < WAVE_LEN; i++) {
+			tmp_samples[i] = rescalef(rescalef(tmp_samples[i], -1.0, 1.0, 0.0, 1.0) * (WAVE_LEN - i) / WAVE_LEN, 0.0, 1.0, -1.0, 1.0);
+		};
+	}
+	
+	
+	normalize_array(tmp_samples, WAVE_LEN, -1.0, 1.0, 0.0);
+	
 	
 	// Convert wave to spectrum
-	RFFT(samples, tmp, WAVE_LEN);
+	RFFT(tmp_samples, tmp, WAVE_LEN);
 	// Convert spectrum to harmonics
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
 		harmonics[i] = hypotf(tmp[2 * i], tmp[2 * i + 1]) * 2.0;
 	};
+	memcpy(samples, tmp_samples, sizeof(float) * WAVE_LEN);
 	updateSamples();
 };
 
