@@ -21,7 +21,9 @@ SOURCES = \
 	ext/imgui/imgui.cpp \
 	ext/imgui/imgui_draw.cpp \
 	ext/imgui/imgui_demo.cpp \
-	ext/imgui/examples/sdl_opengl2_example/imgui_impl_sdl.cpp \
+	ext/imgui/imgui_widgets.cpp \
+	ext/imgui/examples/imgui_impl_sdl.cpp \
+	ext/imgui/examples/imgui_impl_opengl2.cpp \
 	$(wildcard src/*.cpp)
 
 
@@ -31,7 +33,7 @@ ifeq ($(ARCH),lin)
 	# Linux
 	FLAGS += -DARCH_LIN $(shell pkg-config --cflags gtk+-2.0)
 	LDFLAGS += -static-libstdc++ -static-libgcc \
-		-lGL -lpthread \
+		-lglib-2.0 -lGL -lpthread \
 		-Ldep/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
 		-lgtk-x11-2.0 -lgobject-2.0
 	SOURCES += ext/osdialog/osdialog_gtk2.c
@@ -43,13 +45,13 @@ else ifeq ($(ARCH),mac)
 	LDFLAGS += -mmacosx-version-min=10.7 \
 		-stdlib=libc++ -lpthread \
 		-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo \
-		-Ldep/lib -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl
+		-Ldep/lib -lglib-2.0 -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl
 	SOURCES += ext/osdialog/osdialog_mac.m
 else ifeq ($(ARCH),win)
 	# Windows
 	FLAGS += -DARCH_WIN
 	LDFLAGS += \
-		-Ldep/lib -lmingw32 -lSDL2main -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
+		-Ldep/lib -lmingw32 -lglib-2.0 -lSDL2main -lSDL2 -lsamplerate -lsndfile -ljansson -lcurl \
 		-lopengl32 -mwindows
 	SOURCES += ext/osdialog/osdialog_win.c
 	OBJECTS += info.o

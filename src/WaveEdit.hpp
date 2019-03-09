@@ -53,6 +53,10 @@ inline float clampf(float x, float min, float max) {
 	return x > max ? max : x < min ? min : x;
 }
 
+inline double clampd(double x, double min, double max) {
+	return x > max ? max : x < min ? min : x;
+}
+
 /** If the magnitude of x if less than eps, return 0 */
 inline float chopf(float x, float eps) {
 	return (-eps < x && x < eps) ? 0.0 : x;
@@ -275,7 +279,8 @@ struct BaseWave {
 	float lower_pulse_width, upper_pulse_width;
 	*/
 	
-	float brightness;
+	bool lock_shapes;
+	float pulse_width, brightness;
 	float bottom_angle, bottom_magnitude;
 	float bottom_x, bottom_y;
 	float top_angle, top_magnitude;

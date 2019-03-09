@@ -7,7 +7,8 @@
 
 #include "imconfig.h"
 #include "imgui.h"
-#include "imgui/examples/sdl_opengl2_example/imgui_impl_sdl.h"
+#include "imgui/examples/imgui_impl_sdl.h"
+#include "imgui/examples/imgui_impl_opengl2.h"
 
 
 #ifdef ARCH_MAC
@@ -73,8 +74,15 @@ int main(int argc, char **argv) {
 	// Enable V-Sync
 	SDL_GL_SetSwapInterval(1);
 
+	
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+    
 	// Set up Imgui binding
-	ImGui_ImplSdlGL2_Init(window);
+	ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+	ImGui_ImplOpenGL2_Init();
 
 	// Initialize modules
 	uiInit();
@@ -91,12 +99,17 @@ int main(int argc, char **argv) {
 		// Scan events
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
-			ImGui_ImplSdlGL2_ProcessEvent(&event);
+			ImGui_ImplSDL2_ProcessEvent(&event);
 			if (event.type == SDL_QUIT) {
 				running = false;
 			}
 		}
 
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL2_NewFrame();
+		ImGui_ImplSDL2_NewFrame(window);
+		ImGui::NewFrame();
+		
 		// Set title
 		const char *title = SDL_GetWindowTitle(window);
 		char newTitle[1024];
@@ -117,8 +130,7 @@ int main(int argc, char **argv) {
 		if (strcmp(title, newTitle) != 0) {
 			SDL_SetWindowTitle(window, newTitle);
 		}
-
-		ImGui_ImplSdlGL2_NewFrame(window);
+	
 		// Only render if window is visible
 		Uint32 flags = SDL_GetWindowFlags(window);
 		if ((flags & SDL_WINDOW_SHOWN) && !(flags & SDL_WINDOW_MINIMIZED)) {
@@ -127,11 +139,11 @@ int main(int argc, char **argv) {
 		}
 
 		// Render frame
+		ImGui::Render();
 		glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
-
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
-		ImGui::Render();
+		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(window);
 	}
 
@@ -139,7 +151,7 @@ int main(int argc, char **argv) {
 
 	// Cleanup
 	uiDestroy();
-	ImGui_ImplSdlGL2_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
 	SDL_GL_DeleteContext(glContext);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

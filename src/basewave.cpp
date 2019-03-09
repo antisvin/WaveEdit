@@ -2,6 +2,41 @@
 #include <string.h>
 
 
+/*
+double Oscillator::trap3() const {
+    double pulseWidth = std::fmin(0.9999, this->pulseWidth);
+    double scale = 1 / (1 - pulseWidth);
+
+    double y = 4 * t;
+    if (y >= 3) {
+        y -= 4;
+    } else if (y >= 1) {
+        y = 2 - y;
+    }
+    y = std::fmax(-1, std::fmin(1, scale * y));
+
+    double t1 = t + 0.25 - 0.25 * pulseWidth;
+    t1 -= bitwiseOrZero(t1);
+
+    double t2 = t1 + 0.5;
+    t2 -= bitwiseOrZero(t2);
+
+    // Triangle #1
+    y += scale * 2 * freqInSecondsPerSample * (blamp(t1, freqInSecondsPerSample) - blamp(t2, freqInSecondsPerSample));
+
+    t1 = t + 0.25 + 0.25 * pulseWidth;
+    t1 -= bitwiseOrZero(t1);
+
+    t2 = t1 + 0.5;
+    t2 -= bitwiseOrZero(t2);
+
+    // Triangle #2
+    y += scale * 2 * freqInSecondsPerSample * (blamp(t1, freqInSecondsPerSample) - blamp(t2, freqInSecondsPerSample));
+
+    return amplitude * y;
+}
+*/
+
 Oscillator osc_a, osc_b;
 
 /*
@@ -27,6 +62,8 @@ void BaseWave::clear() {
 	memset(this, 0, sizeof(BaseWave));
 	lower_shape = Oscillator::SINE;
 	upper_shape = Oscillator::SINE;
+	pulse_width = 0.5;
+	lock_shapes = true;
 	brightness = 0.0;
 	bottom_angle = 0.0;
 	bottom_magnitude = 0.0;
@@ -90,7 +127,16 @@ void BaseWave::generateShape(const float *shape_phasor, float *samples) {
 
 float BaseWave::getShape(Oscillator *osc, Oscillator::Waveform waveform, float phase) {
 	osc->setSampleRate(rescalef(brightness, 0.0, 1.0, WAVE_LEN / 4, WAVE_LEN));
+	osc->setPulseWidth(clampd(pulse_width, 0.0, 1.0));
 	osc->setWaveform(waveform);
+	
+	if (pulse_width < 0.5) {
+		phase += (0.25 - pulse_width / 2);
+	}
+	else if (pulse_width > 0.75) {
+		phase -= (0.75 - pulse_width);
+	}
+		
 	osc->sync(fmod(phase + 0.75, 1.0));
 	return osc->getAndInc();
 		

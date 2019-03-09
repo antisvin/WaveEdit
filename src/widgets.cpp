@@ -84,7 +84,7 @@ static bool editorBehavior(ImGuiID id, const ImRect& box, const ImRect& inner, f
 	ImGuiContext &g = *GImGui;
 	ImGuiWindow *window = ImGui::GetCurrentWindow();
 
-	bool hovered = ImGui::IsHovered(box, id);
+	bool hovered = ImGui::ItemHoverable(box, id);
 	if (hovered) {
 		ImGui::SetHoveredID(id);
 		if (g.IO.MouseClicked[0]) {
@@ -172,7 +172,7 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
 
 	// // Tooltip
-	// if (ImGui::IsHovered(box, 0)) {
+	// if (ImGui::IsItemHovered(box, 0)) {
 	// 	ImVec2 mousePos = ImGui::GetMousePos();
 	// 	float x = rescalef(mousePos.x, inner.Min.x, inner.Max.x, 0, pointsLen-1);
 	// 	int xi = (int)clampf(x, 0, pointsLen-2);
@@ -181,7 +181,7 @@ bool renderWave(const char *name, float height, float *points, int pointsLen, co
 	// 	ImGui::SetTooltip("%f, %f\n", x, y);
 	// }
 
-	// const bool hovered = ImGui::IsHovered(box, id);
+	// const bool hovered = ImGui::IsItemHovered(box, id);
 	// if (hovered) {
 	// 	ImGui::SetHoveredID(id);
 	// 	ImGui::SetActiveID(id, window);
@@ -234,7 +234,7 @@ bool renderPhasor(const char *name, float height, float *points, int pointsLen, 
 	ImGui::RenderFrame(box.Min, box.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
 
 	// // Tooltip
-	// if (ImGui::IsHovered(box, 0)) {
+	// if (ImGui::IsItemHovered(box, 0)) {
 	// 	ImVec2 mousePos = ImGui::GetMousePos();
 	// 	float x = rescalef(mousePos.x, inner.Min.x, inner.Max.x, 0, pointsLen-1);
 	// 	int xi = (int)clampf(x, 0, pointsLen-2);
@@ -243,7 +243,7 @@ bool renderPhasor(const char *name, float height, float *points, int pointsLen, 
 	// 	ImGui::SetTooltip("%f, %f\n", x, y);
 	// }
 
-	// const bool hovered = ImGui::IsHovered(box, id);
+	// const bool hovered = ImGui::IsItemHovered(box, id);
 	// if (hovered) {
 	// 	ImGui::SetHoveredID(id);
 	// 	ImGui::SetActiveID(id, window);
@@ -418,7 +418,7 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 		float margin = 3.0;
 		ImVec2 pos = ImVec2(rescalef(WAVE_LEN - 1, 0, WAVE_LEN - 1, cellBox.Min.x, cellBox.Max.x), rescalef(value, 1.0, -1.0, cellBox.Min.y + margin, cellBox.Max.y - margin));
 		points.emplace_back(pos);
-		window->DrawList->AddPolyline(points.data(), 1 + WAVE_LEN/divisor, ImGui::GetColorU32(ImGuiCol_PlotLines), false, 1.0, false);		
+		window->DrawList->AddPolyline(points.data(), 1 + WAVE_LEN/divisor, ImGui::GetColorU32(ImGuiCol_PlotLines), false, 1.0);		
 
 		// Draw cell label
 		char label[64];
@@ -429,7 +429,7 @@ void renderBankGrid(const char *name, float height, int gridWidth, float *gridX,
 	}
 
 	// Behavior
-	bool hovered = ImGui::IsHovered(box, id);
+	bool hovered = ImGui::ItemHoverable(box, id);
 	if (hovered) {
 		ImGui::SetHoveredID(id);
 		if (g.IO.MouseClicked[0]) {
@@ -555,7 +555,7 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 	ImGui::PushClipRect(box.Min, box.Max, true);
 
 	// Behavior
-	bool hovered = ImGui::IsHovered(box, id);
+	bool hovered = ImGui::ItemHoverable(box, id);
 	if (hovered) {
 		ImGui::SetHoveredID(id);
 		if (g.IO.MouseClicked[0]) {
@@ -601,7 +601,7 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 			points[i] = point;
 		}
 		float thickness = 1.0;
-		window->DrawList->AddPolyline(points, WAVE_LEN, ImGui::GetColorU32(ImGuiCol_FrameBg), false, thickness, true);
+		window->DrawList->AddPolyline(points, WAVE_LEN, ImGui::GetColorU32(ImGuiCol_FrameBg), false, thickness);
 	}
 
 	// Post-effect plots
@@ -616,7 +616,7 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 			points[i] = point;
 		}
 		float thickness = 1.0 + 4.0 * fmaxf(1.0 - fabsf(b - *activeZ), 0.0);
-		window->DrawList->AddPolyline(points, WAVE_LEN, ImGui::GetColorU32(ImGuiCol_PlotHistogram), false, thickness, true);
+		window->DrawList->AddPolyline(points, WAVE_LEN, ImGui::GetColorU32(ImGuiCol_PlotHistogram), false, thickness);
 	}
 
 	ImGui::PopClipRect();
@@ -645,7 +645,7 @@ float renderBankWave(const char *name, float height, const float *lines, int lin
 		return 0.0;
 
 	// Behavior
-	bool hovered = ImGui::IsHovered(box, id);
+	bool hovered = ImGui::ItemHoverable(box, id);
 	if (hovered) {
 		ImGui::SetHoveredID(id);
 		if (g.IO.MouseClicked[0]) {
