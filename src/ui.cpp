@@ -1007,7 +1007,7 @@ void baseWavePage() {
 		//float samplesOversample[WAVE_LEN * oversample];
 		//cyclicOversample(wave->samples, samplesOversample, WAVE_LEN, oversample);
 		if (renderWave("FinalWaveEditor", 200.0, wave->samples, WAVE_LEN, wave->samples, WAVE_LEN, tool)) {
-			wave->commitSamples();
+			wave->generateSamples();
 			historyPush();
 		}
 		
@@ -1019,7 +1019,7 @@ void baseWavePage() {
 		float shapeOversample[WAVE_LEN * oversample];
 		cyclicOversample(wave->shape, shapeOversample, WAVE_LEN, oversample);
 		if (renderWave("WaveEditor", 200.0, wave->shape, WAVE_LEN, shapeOversample, WAVE_LEN * oversample, tool)) {
-			wave->commitShape();
+			wave->generateSamples();
 			historyPush();
 		}
 		
@@ -1029,7 +1029,7 @@ void baseWavePage() {
 
 		//cyclicOversample(wave->phasor, phasorOversample, WAVE_LEN, oversample);
 		if (renderPhasor("PhasorEditor", 400.0, wave->phasor, WAVE_LEN, phasorBuf, WAVE_LEN, tool, wave->bottom_x, wave->bottom_y, wave->bottom_magnitude, wave->top_x, wave->top_y, wave->top_magnitude)) {
-			wave->commitPhasor();
+			wave->generateSamples();
 			historyPush();
 		}
 		

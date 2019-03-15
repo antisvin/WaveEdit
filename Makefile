@@ -8,7 +8,7 @@ endif
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=nocona -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE -DWAVETABLE_FORMAT_$(WT_FORMAT) \
-	-I. -Iext -Iext/imgui -Iext/polyblep -Idep/include -Idep/include/SDL2
+	-I. -Iext -Iext/imgui -Idep/include -Idep/include/SDL2
 CFLAGS =
 CXXFLAGS = -std=c++11
 LDFLAGS =
@@ -16,7 +16,6 @@ LDFLAGS =
 
 SOURCES = \
 	ext/pffft/pffft.c \
-	ext/polyblep/PolyBLEP.cpp \
 	ext/lodepng/lodepng.cpp \
 	ext/imgui/imgui.cpp \
 	ext/imgui/imgui_draw.cpp \

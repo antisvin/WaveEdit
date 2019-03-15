@@ -571,8 +571,8 @@ void phaseModulation(float *carrier, const float *modulator, float index, float 
 		if (phase2 <= 0)
 			phase2 = 1 - phase2;
 		carrier_tmp[i] = crossf(
-			linterpf(tmp, fmod(phase1 * WAVE_LEN * oversample, WAVE_LEN * oversample + 1)),
-			linterpf(tmp, fmod(phase2 * WAVE_LEN * oversample, WAVE_LEN * oversample + 1)),
+			linterpf(tmp, fmod(phase1 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			linterpf(tmp, fmod(phase2 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
 			index_mod);
 	};
 	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
@@ -597,8 +597,8 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 		float modulation2 = linterpf(modulator_tmp, fmod(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1));
 		float phase = (float) i / WAVE_LEN / oversample;
 		carrier_tmp[i] = crossf(
-			linterpf(tmp, fmod(phase * (1 + rescalef(modulation1, -1.0, 1.0, -depth, depth)) * WAVE_LEN * oversample, (WAVE_LEN  * oversample + 1))),
-			linterpf(tmp, fmod(phase * (1 + rescalef(modulation2, -1.0, 1.0, -depth, depth)) * WAVE_LEN * oversample, (WAVE_LEN  * oversample + 1))),
+			linterpf(tmp, fmod(phase * (1 + rescalef(modulation1, -1.0, 1.0, -depth, depth)) * WAVE_LEN * oversample, (WAVE_LEN  * oversample))),
+			linterpf(tmp, fmod(phase * (1 + rescalef(modulation2, -1.0, 1.0, -depth, depth)) * WAVE_LEN * oversample, (WAVE_LEN  * oversample))),
 			index_mod);
 	}
 	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);

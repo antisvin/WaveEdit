@@ -2,66 +2,15 @@
 #include <string.h>
 
 
-/*
-double Oscillator::trap3() const {
-    double pulseWidth = std::fmin(0.9999, this->pulseWidth);
-    double scale = 1 / (1 - pulseWidth);
 
-    double y = 4 * t;
-    if (y >= 3) {
-        y -= 4;
-    } else if (y >= 1) {
-        y = 2 - y;
-    }
-    y = std::fmax(-1, std::fmin(1, scale * y));
 
-    double t1 = t + 0.25 - 0.25 * pulseWidth;
-    t1 -= bitwiseOrZero(t1);
-
-    double t2 = t1 + 0.5;
-    t2 -= bitwiseOrZero(t2);
-
-    // Triangle #1
-    y += scale * 2 * freqInSecondsPerSample * (blamp(t1, freqInSecondsPerSample) - blamp(t2, freqInSecondsPerSample));
-
-    t1 = t + 0.25 + 0.25 * pulseWidth;
-    t1 -= bitwiseOrZero(t1);
-
-    t2 = t1 + 0.5;
-    t2 -= bitwiseOrZero(t2);
-
-    // Triangle #2
-    y += scale * 2 * freqInSecondsPerSample * (blamp(t1, freqInSecondsPerSample) - blamp(t2, freqInSecondsPerSample));
-
-    return amplitude * y;
-}
-*/
-
-Oscillator osc_a, osc_b;
-
-/*
-
-const char *waveShapeNames[WAVE_SHAPES_LEN] {
-	"Empty",
-	"Double Sine",
-	"Multi Sine",
-	"Triangle",
-	"Double Triangle",
-	"Saw",
-	"Double Saw",
-	"Trapezoid",
-	"Square",
-	"Double Square",
-	"Pulse",
-	"Double Pulse",
-};
-*/
+Oscillator osc;
 
 
 void BaseWave::clear() {
 	memset(this, 0, sizeof(BaseWave));
-	lower_shape = Oscillator::SINE;
-	upper_shape = Oscillator::SINE;
+	lower_shape = SINE;
+	upper_shape = SINE;
 	pulse_width = 0.5;
 	lock_shapes = true;
 	brightness = 0.0;
@@ -85,10 +34,7 @@ void BaseWave::updateShape() {
 	float linear_phasor[WAVE_LEN];
 	for (int i = 0; i < WAVE_LEN; i++)
 		linear_phasor[i] = (float) i / WAVE_LEN;
-	generateShape(linear_phasor, shape);
-};
-
-void BaseWave::generateShape(const float *shape_phasor, float *samples) {
+	
 	// Generate base wave shape using lower/upper wave shapes and brightness
 	float flshape = lower_shape * (WAVE_SHAPES_LEN - 1);
 	float fushape = upper_shape * (WAVE_SHAPES_LEN - 1); 
@@ -98,16 +44,21 @@ void BaseWave::generateShape(const float *shape_phasor, float *samples) {
 	float fushape2 = fmod(fushape1 + 1.0, WAVE_SHAPES_LEN);
 	flshape = fmod(flshape, 1.0);
 	fushape = fmod(fushape, 1.0);
-	float phase;
-	//osc_a.sync(0.0);
-	//osc_b.sync(0.0);
-	
+
+	osc.dt = powf(2.0, (1.0 - clampf(brightness, 0.0, 1.0)) * 4) / (float) WAVE_LEN;
+	osc.pulse_width = clampf(pulse_width, 0.0, 1.0);	
+	osc.render(
+		(WaveShapeID) (int) flshape1, (WaveShapeID) (int) flshape2,  flshape,
+		(WaveShapeID) (int) fushape1, (WaveShapeID) (int) fushape2,  fushape,
+		shape);
+}	
+	/*
 	for (int i = 0; i < WAVE_LEN; i++) {
 		phase = shape_phasor[i];
 		if (i == WAVE_LEN) phase = 0.0;
 		float fshape, fshape1, fshape2;
 		//if (i < WAVE_LEN / 2) {
-		if (phase < 0.5) {
+		if (phase < pulse_width) {
 			fshape1 = flshape1;
 			fshape2 = flshape2;
 			fshape = flshape;
@@ -122,64 +73,8 @@ void BaseWave::generateShape(const float *shape_phasor, float *samples) {
 		
 		samples[i] = crossf(fshape1, fshape2, fshape);
 	};
-};
-
-
-float BaseWave::getShape(Oscillator *osc, Oscillator::Waveform waveform, float phase) {
-	osc->setSampleRate(rescalef(brightness, 0.0, 1.0, WAVE_LEN / 4, WAVE_LEN));
-	osc->setPulseWidth(clampd(pulse_width, 0.0, 1.0));
-	osc->setWaveform(waveform);
-	
-	if (pulse_width < 0.5) {
-		phase += (0.25 - pulse_width / 2);
-	}
-	else if (pulse_width > 0.75) {
-		phase -= (0.75 - pulse_width);
-	}
-		
-	osc->sync(fmod(phase + 0.75, 1.0));
-	return osc->getAndInc();
-		
-	/*
-	int n;
-	switch (shape) {
-		case EMPTY:
-			return -1.0f;
-		case DOUBLE_SINE:
-			return sin(-0.5 * M_PI + 4 * M_PI * phase);
-		case MULTI_SINE:
-			n = 1 + brightness * 20;
-			return -cos(2 * n * M_PI * phase);
-			//return sin((n - 0.5) * M_PI + 2 * n * M_PI * phase);
-		case TRIANGLE:
-			return (phase >= 0.5) ? rescalef(phase, 0.5, 1.0, 1.0, -1.0) : rescalef(phase, 0.0, 0.5, -1.0, 1.0);
-		case DOUBLE_TRIANGLE:
-			phase = fmod(phase * 2, 1.0);
-			return (phase >= 0.5) ? rescalef(phase, 0.5, 1.0, 1.0, -1.0) : rescalef(phase, 0.0, 0.5, -1.0, 1.0);
-		case SAW:
-			return rescalef(phase, 0.0, 1.0, -1.0, 1.0);
-		case DOUBLE_SAW:
-			phase = fmod(phase * 2, 1.0);
-			return rescalef(phase, 0.0, 1.0, -1.0, 1.0);
-		case TRAPEZOID:
-			return clampf(((phase >= 0.5) ? rescalef(phase, 0.5, 1.0, 1.0, -1.0) : rescalef(phase, 0.0, 0.5, -1.0, 1.0)) * 2.0, -1.0, 1.0);
-		case DOUBLE_TRAPEZOID:
-			phase = fmod(phase * 2, 1.0);
-			return clampf(((phase >= 0.5) ? rescalef(phase, 0.5, 1.0, 1.0, -1.0) : rescalef(phase, 0.0, 0.5, -1.0, 1.0)) * 2.0, -1.0, 1.0);
-		case SQUARE:
-			return (phase > 0.25 && phase <= 0.75) ? 1.0 : -1.0;
-		case DOUBLE_SQUARE:
-			phase = fmod(phase * 2, 1.0);
-			return (phase > 0.25 && phase <= 0.75) ? 1.0 : -1.0;
-		case PULSE:
-			return (phase == 0.25) ? 1.0 : -1.0;
-		case DOUBLE_PULSE:
-			return (phase == 0.25 || phase == 0.75) ? 1.0 : -1.0;
-		default:
-			return sin(-0.5 * M_PI + 2 * M_PI * phase);
-	}
 	*/
-};
+
 
 
 void BaseWave::updatePhasor() {
@@ -282,61 +177,68 @@ void BaseWave::updatePhasor() {
 void BaseWave::generateSamples() {
 	const int MAX_RESONANCE = 4;
 	float tmp[WAVE_LEN + 1];
-	//memcpy(tmp, phasor, sizeof(float) * WAVE_LEN);
-	//tmp[WAVE_LEN] = tmp[0];
-	
+	memcpy(tmp, phasor, sizeof(float) * WAVE_LEN);
+	tmp[WAVE_LEN] = 1.0;
+
 	float final_phasor[WAVE_LEN];
 	float tmp_samples[WAVE_LEN];
 	
 	if (resonance > 0.0) {
+		/*
+		float total_levels = powf(2.0, resonance * 3);
+		float int_levels = powf(2.0, floor(resonance * 3));
+		float rem_levels = total_levels - int_levels;
+		float int_width = (float) WAVE_LEN / total_levels;
+		//float int_width = full_width * int_levels / total_levels;
+		float full_width = (
+		float rem_width = (float) WAVE_LEN / rem_levels;
+		printf("%f %f %f %f\n", total_levels, int_levels, int_width, rem_width);
+		for (int i = 0; i < WAVE_LEN; i++) {
+			float phase = (float) i;
+			
+			
+			int step = (int) (phase / full_width);
+			float step_phase = fmod(phase, full_width);
+			float full_pos = fmod(phase, full_width);
+			float int_pos = fmod(full_pos, int_width);
+			float rem_pos = fmod(full_pos, int_width);
+			
+			//printf("%i %f %f %f\n", i, full_pos, int_pos, rem_pos);
+			
+			if (step_phase < int_width) {
+				final_phasor[i] = linterpf(tmp, rescalef(int_pos, 0, int_width, 0, WAVE_LEN));
+			}
+			else {
+				//printf("%i RP %f RW %f FP %f FW %f IP %f IW %f\n", i, rem_pos, rem_width, full_pos, full_width, int_pos, int_width);
+				//printf("%f\n", rescalef(rem_pos, 0, rem_width, 0, WAVE_LEN));
+				final_phasor[i] = linterpf(tmp, rescalef(rem_pos, 0, rem_width, 0, WAVE_LEN));
+			}
+			
+		}
+		*/
+		
 		float phase = 0.0;
 		float sync_phase = 0.0;
 		for (int i = 0; i < WAVE_LEN; i++) {
-			final_phasor[i] = phasor[(int)(sync_phase * WAVE_LEN)];
-			//final_phasor[i] = linterpf(phasor, sync_phase * WAVE_LEN);
-//			samples[i] = linterpf(tmp, phasor[(int)(sync_phase * WAVE_LEN)] * WAVE_LEN);
-			phase += 1.0 / WAVE_LEN;
+			final_phasor[i] = linterpf(tmp, sync_phase * WAVE_LEN);
+			phase = (float)i / WAVE_LEN;
 			sync_phase += 1.0 / WAVE_LEN * (1 + MAX_RESONANCE * resonance);
 			if (sync_phase >= 1.0)
 				sync_phase -= 1.0;
-				
+
 		}
-		/*
-		for (int i = 0; i < WAVE_LEN + 1; i++) {
-			tmp[i] = rescalef(tmp[i], -1.0, 1.0, 0.0, 1.0);
-		};
-		// Hello, 1985!
-		float a = 0.0, b = 0.0, c = 0.0, d = 0.0, e = 0.0;
-		// (a) The base frequency counter, wrapping around every period.
-		// (b) The resonance frequency counter at a slightly higher frequency, being reset (or "synced") when the base counter wraps around.
-		// (c) The resonance frequency counter used as a sine wave readout. Note the nasty sudden jump at the reset!
-		// (d) The inverted base frequency counter.
-		// (e) Multiplying c by d. The sudden jump in c is now leveled out.
-		float step = 1.0 / WAVE_LEN;
-		for (int i = 0; i < WAVE_LEN; i++) {
-			a = phasor[i];
-			//a += step;
-			b += step * (1 + MAX_RESONANCE * resonance);
-			if (b >= 1.0)
-				b = 0.0;
-			//fmod(a * (1 + MAX_RESONANCE * resonance), 1.0);
-		
-			c = linterpf(tmp, b * WAVE_LEN);
-			//c = tmp[(int) (b * WAVE_LEN)];//linterpf(shape, b * WAVE_LEN);
-			d = 1.0 - a;
-			e = c * d;
-			samples[i] = rescalef(e, 0.0, 1.0, -1.0, 1.0);
-		};
-		*/
+
 	}
 	else {
 		memcpy(final_phasor, phasor, sizeof(float) * WAVE_LEN);
-		//for (int i = 0; i < WAVE_LEN; i++)
-		//	samples[i] = linterpf(tmp, phasor[i] * WAVE_LEN);
 		
 	};
 	
-	generateShape(final_phasor, tmp_samples);
+	// TODO: maybe allow passing phasor to shape render func?
+	memcpy(tmp, shape, sizeof(float) * WAVE_LEN);
+	tmp[WAVE_LEN] = tmp[0];
+	for (int i = 0; i < WAVE_LEN; i++)
+		tmp_samples[i] = linterpf(tmp, WAVE_LEN * final_phasor[i]);
 	
 	if (resonance > 0.0) {
 		for (int i = 0; i < WAVE_LEN; i++) {
@@ -344,9 +246,7 @@ void BaseWave::generateSamples() {
 		};
 	}
 	
-	
 	normalize_array(tmp_samples, WAVE_LEN, -1.0, 1.0, 0.0);
-	
 	
 	// Convert wave to spectrum
 	RFFT(tmp_samples, tmp, WAVE_LEN);
@@ -366,16 +266,3 @@ void BaseWave::updateSamples() {
 	}
 };
 
-void BaseWave::commitSamples() {
-	generateSamples();
-};
-
-
-void BaseWave::commitShape() {
-	generateSamples();
-};
-
-
-void BaseWave::commitPhasor() {
-	generateSamples();
-};

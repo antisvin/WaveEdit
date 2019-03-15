@@ -1,6 +1,5 @@
 #pragma once
 
-#include "PolyBLEP.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -53,9 +52,6 @@ inline float clampf(float x, float min, float max) {
 	return x > max ? max : x < min ? min : x;
 }
 
-inline double clampd(double x, double min, double max) {
-	return x > max ? max : x < min ? min : x;
-}
 
 /** If the magnitude of x if less than eps, return 0 */
 inline float chopf(float x, float eps) {
@@ -69,6 +65,31 @@ inline float rescalef(float x, float xMin, float xMax, float yMin, float yMax) {
 inline float crossf(float a, float b, float frac) {
 	return (1.0 - frac) * a + frac * b;
 }
+
+// Bandlimiting
+
+inline float blep(float t, float dt) {
+	if (t < dt) {
+		return -(t / dt - 1) * (t / dt - 1);
+	} else if (t > 1 - dt) {
+		return ((t - 1) / dt + 1) * ((t - 1) / dt + 1);
+	} else {
+		return 0;
+	}
+}
+
+inline float blamp(float t, float dt) {
+	if (t < dt) {
+		t = t / dt - 1;
+		return -1 / 3.0 * t * t * t;
+	} else if (t > 1 - dt) {
+		t = (t - 1) / dt + 1;
+		return 1 / 3.0 * t * t * t;
+	} else {
+		return 0;
+	}
+}
+
 
 /** Linearly interpolate an array `p` with index `x`
 Assumes that the array at `p` is of length at least ceil(x).
@@ -103,7 +124,6 @@ inline void normalize_array(float *data, int size, float new_min, float new_max,
 		}
 	}
 	else {
-		memset(data, empty, sizeof(float) * size);
 		memset(data, empty, sizeof(float) * size);
 	}
 }
@@ -238,37 +258,51 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 
 
 ////////////////////
-// basewave.cpp
+// oscillator.cpp
 ////////////////////
 
 enum WaveShapeID {
-	EMPTY,
-	DOUBLE_SINE,
-	MULTI_SINE,
+	SINE,
+	HALF_SINE,
 	TRIANGLE,
-	DOUBLE_TRIANGLE,
-	SAW,
-	DOUBLE_SAW,
-	TRAPEZOID,
-	DOUBLE_TRAPEZOID,
+	TRI_PULSE,
 	SQUARE,
-	DOUBLE_SQUARE,
-	PULSE,
-	DOUBLE_PULSE,
+	RECTANGLE,
+	TRAPEZOID,
 	WAVE_SHAPES_LEN
 };
 
-extern const char *waveShapeName[WAVE_SHAPES_LEN];
 
-
-#define WAVE_SHAPES_LEN 14
-
-class Oscillator : public PolyBLEP {
-public:
-	Oscillator () : PolyBLEP(WAVE_LEN / 2, PolyBLEP::SINE, 1.0) {};
+struct Oscillator {
+	float pulse_width;
+	float dt;
+	
+	void render(WaveShapeID lower_a, WaveShapeID lower_b, float lower_ratio, WaveShapeID upper_a, WaveShapeID upper_b, float upper_ratio, float *samples);
+	
+	void getWave(WaveShapeID shape, bool lower, bool upper, float *samples, float *compensation);
+	
+	void sineWave(bool lower, bool upper, float *samples, float *compenation);
+	void halfSineWave(bool lower, bool upper, float *samples, float *compenation);
+	void triangleWave(bool lower, bool upper, float *samples, float *compenation);
+	void triPulseWave(bool lower, bool upper, float *samples, float *compenation);
+	void squareWave(bool lower, bool upper, float *samples, float *compenation);
+	void rectangleWave(bool lower, bool upper, float *samples, float *compenation);
+	void trapezoidWave(bool lower, bool upper, float *samples, float *compenation);
 };
 
-extern Oscillator osc_a, osc_b;
+
+
+//extern Oscillator osc_a, osc_b;
+
+
+
+////////////////////
+// basewave.cpp
+////////////////////
+
+
+#define WAVE_SHAPES_LEN 7
+
 
 struct BaseWave {
 	float lower_shape, upper_shape;
@@ -296,12 +330,8 @@ struct BaseWave {
 	void updateShape();
 	void updatePhasor();
 	void generateSamples();
-	void commitSamples();
-	void commitShape();
-	void commitPhasor();
 	void updateSamples();
 	
-	float getShape(Oscillator *osc, Oscillator::Waveform waveform, float phase);
 	void generateShape(const float *shape_phasor, float *samples);
 	float harmonics[WAVE_LEN / 2];
 };
