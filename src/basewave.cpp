@@ -26,7 +26,7 @@ void BaseWave::clear() {
 	bezier_weight = 0.0;
 	updateShape();
 	updatePhasor();
-	generateSamples();
+	generateSamples(false);
 }
 
 
@@ -52,29 +52,6 @@ void BaseWave::updateShape() {
 		(WaveShapeID) (int) fushape1, (WaveShapeID) (int) fushape2,  fushape,
 		shape);
 }	
-	/*
-	for (int i = 0; i < WAVE_LEN; i++) {
-		phase = shape_phasor[i];
-		if (i == WAVE_LEN) phase = 0.0;
-		float fshape, fshape1, fshape2;
-		//if (i < WAVE_LEN / 2) {
-		if (phase < pulse_width) {
-			fshape1 = flshape1;
-			fshape2 = flshape2;
-			fshape = flshape;
-		}
-		else {
-			fshape1 = fushape1;
-			fshape2 = fushape2;
-			fshape = fushape;
-		};
-		fshape1 = getShape(&osc_a, (Oscillator::Waveform) (int) fshape1, phase);
-		fshape2 = getShape(&osc_b, (Oscillator::Waveform) (int) fshape2, phase);
-		
-		samples[i] = crossf(fshape1, fshape2, fshape);
-	};
-	*/
-
 
 
 void BaseWave::updatePhasor() {
@@ -174,7 +151,7 @@ void BaseWave::updatePhasor() {
 
 
 // Apply phasor to base wave shape
-void BaseWave::generateSamples() {
+void BaseWave::generateSamples(bool update_waves) {
 	const int MAX_RESONANCE = 4;
 	float tmp[WAVE_LEN + 1];
 	memcpy(tmp, phasor, sizeof(float) * WAVE_LEN);
@@ -255,13 +232,15 @@ void BaseWave::generateSamples() {
 		harmonics[i] = hypotf(tmp[2 * i], tmp[2 * i + 1]) * 2.0;
 	};
 	memcpy(samples, tmp_samples, sizeof(float) * WAVE_LEN);
-	updateSamples();
+
+	updateSamples(update_waves);
 };
 
 
-void BaseWave::updateSamples() {
+void BaseWave::updateSamples(bool copy_samples) {
 	for (int j = 0; j < BANK_LEN; j++) {
-		memcpy(currentBank.waves[j].samples, samples, sizeof(float) * WAVE_LEN);
+		if (copy_samples)
+			memcpy(currentBank.waves[j].samples, samples, sizeof(float) * WAVE_LEN);
 		currentBank.waves[j].commitSamples();
 	}
 };

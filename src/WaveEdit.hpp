@@ -180,6 +180,10 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 
 
 enum EffectID {
+	PHASE_MODULATION,
+	FREQUENCY_MODULATION,
+	RING_MODULATION,
+	AMPLITUDE_MODULATION,
 	PRE_GAIN,
 	PHASE_SHIFT,
 	HARMONIC_SHIFT,
@@ -329,8 +333,8 @@ struct BaseWave {
 	void clear();
 	void updateShape();
 	void updatePhasor();
-	void generateSamples();
-	void updateSamples();
+	void generateSamples(bool update_waves);
+	void updateSamples(bool update_waves);
 	
 	void generateShape(const float *shape_phasor, float *samples);
 	float harmonics[WAVE_LEN / 2];
@@ -361,7 +365,8 @@ struct BaseWave {
 
 struct Bank {
 	Wave waves[BANK_LEN];
-	BaseWave base_wave;
+	BaseWave carrier_wave;
+	BaseWave modulator_wave;
 
 	void clear();
 	void swap(int i, int j);
@@ -474,8 +479,6 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 Returns the relative amount dragged
 */
 float renderBankWave(const char *name, float height, const float *lines, int linesLen, float bankStart, float bankEnd, int bankLen);
-void renderBaseWave(const char *name, float height, float lower_shape, float upper_shape, float shape_brightness, float phasor_shape, float phasor_angle, float phasor_level, float resonance);
-
 
 ////////////////////
 // ui.cpp

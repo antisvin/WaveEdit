@@ -14,7 +14,8 @@ using namespace smf;
 void Bank::clear() {
 	// The lazy way
 	memset(this, 0, sizeof(Bank));
-	base_wave.clear();
+	carrier_wave.clear();
+	modulator_wave.clear();
 
 	for (int i = 0; i < BANK_LEN; i++) {
 		waves[i].commitSamples();
@@ -72,7 +73,6 @@ void Bank::save(const char *filename) {
 
 void Bank::load(const char *filename) {
 	clear();
-	base_wave.clear();
 
 	FILE *f = fopen(filename, "rb");
 	if (!f)

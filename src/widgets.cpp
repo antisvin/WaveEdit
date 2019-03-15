@@ -692,7 +692,3 @@ float renderBankWave(const char *name, float height, const float *lines, int lin
 	}
 	return delta;
 }
-
-
-void renderBaseWave(const char *name, float height, float lower_shape, float upper_shape, float shape_brightness, float phasor_shape, float phasor_angle, float phasor_level, float resonance){
-}

@@ -37,7 +37,8 @@ static void refreshStyle();
 
 
 enum Page {
-	BASE_WAVE_PAGE=0,
+	CARRIER_WAVE_PAGE=0,
+	MODULATOR_WAVE_PAGE,
 	EDITOR_PAGE,
 	EFFECT_PAGE,
 	GRID_PAGE,
@@ -47,7 +48,7 @@ enum Page {
 	NUM_PAGES
 };
 
-Page currentPage = BASE_WAVE_PAGE;
+Page currentPage = CARRIER_WAVE_PAGE;
 
 
 static ImVec4 lighten(ImVec4 col, float p) {
@@ -459,18 +460,20 @@ static void menuKeyCommands() {
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_SPACE))
 				playEnabled = !playEnabled;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_1))
-				currentPage = BASE_WAVE_PAGE;
+				currentPage = CARRIER_WAVE_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_2))
-				currentPage = EDITOR_PAGE;
+				currentPage = MODULATOR_WAVE_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_3))
-				currentPage = EFFECT_PAGE;
+				currentPage = EDITOR_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_4))
-				currentPage = GRID_PAGE;
+				currentPage = EFFECT_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_5))
-				currentPage = WATERFALL_PAGE;
+				currentPage = GRID_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_6))
-				currentPage = IMPORT_PAGE;
+				currentPage = WATERFALL_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_7))
+				currentPage = IMPORT_PAGE;
+			if (ImGui::IsKeyPressed(SDL_SCANCODE_8))
 				currentPage = DB_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_UP))
 				incrementSelectedId(currentPage == GRID_PAGE ? -BANK_GRID_WIDTH : -1);
@@ -981,7 +984,7 @@ void waterfallPage() {
 }
 
 
-void baseWavePage() {
+void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
 	{
 		float dummyZ = 0.0;
@@ -993,21 +996,20 @@ void baseWavePage() {
 
 	ImGui::SameLine();
 	
-	ImGui::BeginChild("Base Wave", ImVec2(0, 0), true);
+	ImGui::BeginChild(title, ImVec2(0, 0), true);
 	{
 		ImGui::PushItemWidth(-1.0);
 		static Tool tool = PENCIL_TOOL;
 		renderToolSelector(&tool);
 		
-		
-		BaseWave *wave = &currentBank.base_wave;
+	
 		const int oversample = 4;
 		
 		ImGui::Text("Final Waveform");
 		//float samplesOversample[WAVE_LEN * oversample];
 		//cyclicOversample(wave->samples, samplesOversample, WAVE_LEN, oversample);
 		if (renderWave("FinalWaveEditor", 200.0, wave->samples, WAVE_LEN, wave->samples, WAVE_LEN, tool)) {
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
@@ -1019,7 +1021,7 @@ void baseWavePage() {
 		float shapeOversample[WAVE_LEN * oversample];
 		cyclicOversample(wave->shape, shapeOversample, WAVE_LEN, oversample);
 		if (renderWave("WaveEditor", 200.0, wave->shape, WAVE_LEN, shapeOversample, WAVE_LEN * oversample, tool)) {
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
@@ -1029,13 +1031,13 @@ void baseWavePage() {
 
 		//cyclicOversample(wave->phasor, phasorOversample, WAVE_LEN, oversample);
 		if (renderPhasor("PhasorEditor", 400.0, wave->phasor, WAVE_LEN, phasorBuf, WAVE_LEN, tool, wave->bottom_x, wave->bottom_y, wave->bottom_magnitude, wave->top_x, wave->top_y, wave->top_magnitude)) {
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
 		if (ImGui::Checkbox("Lock Shapes", &(wave->lock_shapes))) {
 			wave->updateShape();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		};
 		
@@ -1043,7 +1045,7 @@ void baseWavePage() {
 			if (wave->lock_shapes)
 				wave->upper_shape = wave->lower_shape;
 			wave->updateShape();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
@@ -1054,7 +1056,7 @@ void baseWavePage() {
 		
 		if (ImGui::SliderFloat("##upper_shape", &(wave->upper_shape), 0.0, 1.0, "Upper shape: %.3f")) {
 			wave->updateShape();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
@@ -1065,49 +1067,49 @@ void baseWavePage() {
 		
 		if (ImGui::SliderFloat("##pulse_width", &(wave->pulse_width), 0.0, 1.0, "Pulse width: %.3f")) {
 			wave->updateShape();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
 		if (ImGui::SliderFloat("##shape_brightness", &(wave->brightness), 0.0, 1.0, "Shape brightness: %.3f")) {
 			wave->updateShape();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 
 		if (ImGui::SliderFloat("##bottom_angle", &(wave->bottom_angle), 0.0, 1.0, "Bottom angle: %.3f")) {
 			wave->updatePhasor();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
 		if (ImGui::SliderFloat("##bottom_magnitude", &(wave->bottom_magnitude), 0.0, 1.0, "Bottom magnitude: %.3f")) {
 			wave->updatePhasor();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
 		if (ImGui::SliderFloat("##top_angle", &(wave->top_angle), 0.0, 1.0, "Top angle: %.3f")) {
 			wave->updatePhasor();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
 		if (ImGui::SliderFloat("##top_magnitude", &(wave->top_magnitude), 0.0, 1.0, "Top magnitude: %.3f")) {
 			wave->updatePhasor();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
 		if (ImGui::SliderFloat("##bezier_weight", &(wave->bezier_weight), 0.0, 1.0, "Bezier weight: %.3f")) {
 			wave->updatePhasor();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
 		if (ImGui::SliderFloat("##bezier_ratio", &(wave->bezier_ratio), 0.0, 1.0, "Bezier ratio: %.3f")) {
 			wave->updatePhasor();
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 		
@@ -1115,12 +1117,23 @@ void baseWavePage() {
 		//			if (ImGui::SliderFloat(id, &currentBank.waves[selectedId].effects[effect], 0.0f, 1.0f, text)) {
 		if (ImGui::SliderFloat("##resonance", &(wave->resonance), 0.0, 1.0, "Resonance: %.3f")) {
 			//wave->resonance = clampf(wave.resonance, 0.0, 1.0);
-			wave->generateSamples();
+			wave->generateSamples(update_waves);
 			historyPush();
 		}
 	}
 	ImGui::EndChild();
 }
+
+
+void carrierWavePage() {
+	baseWavePage(&(currentBank.carrier_wave), "Carrier Wave", true);
+}
+
+
+void modulatorWavePage() {
+	baseWavePage(&(currentBank.modulator_wave), "Modulator Wave", false);
+}
+
 
 void renderMain() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -1134,7 +1147,8 @@ void renderMain() {
 		// Tab bar
 		{
 			static const char *tabLabels[NUM_PAGES] = {
-				"Base Wave Editor",
+				"Carrier Wave Editor",
+				"Modulator Wave Editor",
 				"Waveform Editor",
 				"Effect Editor",
 				"Grid XY View",
@@ -1151,7 +1165,8 @@ void renderMain() {
 		playModeXY = false;
 		playingBank = &currentBank;
 		switch (currentPage) {
-		case BASE_WAVE_PAGE: baseWavePage(); break;
+		case CARRIER_WAVE_PAGE: carrierWavePage(); break;
+		case MODULATOR_WAVE_PAGE: modulatorWavePage(); break;
 		case EDITOR_PAGE: editorPage(); break;
 		case EFFECT_PAGE: effectPage(); break;
 		case GRID_PAGE: gridPage(); break;

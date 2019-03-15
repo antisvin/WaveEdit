@@ -8,6 +8,10 @@ bool clipboardActive = false;
 
 
 const char *effectNames[EFFECTS_LEN] {
+	"Phase Modulation",
+	"Frequency Modulation",
+	"Ring Modulation",
+	"Amplitude Modulation",
 	"Pre-Gain",
 	"Phase Shift",
 	"Harmonic Shift",
@@ -29,7 +33,7 @@ const char *effectNames[EFFECTS_LEN] {
 	"Frequency Modulation Feedback",
 	"Ring Modulation Feedback",
 	"Amplitude Modulation Feedback",
-	"Modulation Index",
+	"Feedback Modulation Index",
 	"Low Boost",
 	"Mid Boost",
 	"High Boost",
@@ -44,6 +48,28 @@ void Wave::clear() {
 void Wave::updatePost() {
 	float out[WAVE_LEN];
 	memcpy(out, samples, sizeof(float) * WAVE_LEN);
+	
+	
+	// Phase Modulation
+	if (effects[PHASE_MODULATION] > 0.0) {
+		phaseModulation(out, currentBank.modulator_wave.samples, 0.0, clampf(effects[PHASE_MODULATION], 0.0, 1.0));
+	}
+	
+	// Frequency Modulation
+	if (effects[FREQUENCY_MODULATION] > 0.0) {
+		frequencyModulation(out, currentBank.modulator_wave.samples, 0.0, clampf(effects[FREQUENCY_MODULATION], 0.0, 1.0));
+	}
+	
+	// Ring Modulation
+	if (effects[RING_MODULATION] > 0.0) {
+		ringModulation(out, currentBank.modulator_wave.samples, 0.0, clampf(effects[RING_MODULATION], 0.0, 1.0));
+	}
+	
+	// Amplitude Modulation
+	if (effects[AMPLITUDE_MODULATION] > 0.0) {
+		amplitudeModulation(out, currentBank.modulator_wave.samples, 0.0, clampf(effects[AMPLITUDE_MODULATION], 0.0, 1.0));
+	}	
+	
 
 	// Pre-gain with saturation / soft clipping
 	if (effects[PRE_GAIN]) {
