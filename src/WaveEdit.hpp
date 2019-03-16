@@ -66,6 +66,10 @@ inline float crossf(float a, float b, float frac) {
 	return (1.0 - frac) * a + frac * b;
 }
 
+inline float wrap(float a, float limit) {
+	return fmod(fmod(a, limit) + limit, limit);
+}
+
 // Bandlimiting
 
 inline float blep(float t, float dt) {
