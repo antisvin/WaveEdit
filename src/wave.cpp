@@ -622,13 +622,13 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 	for (int i = 0; i < WAVE_LEN * oversample; i++) {
 		float modulation1 = linterpf(modulator_tmp, wrap(i * ceilf(index), WAVE_LEN * oversample + 1)) * depth;
 		float modulation2 = linterpf(modulator_tmp, wrap(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1)) * depth;
-		phase1 += step + modulation1 / WAVE_LEN;
-		phase1 = wrap(phase1, 1.0);
-		phase2 +=  step + modulation2 / WAVE_LEN;
-		phase2 = wrap(phase2, 1.0);
+		phase1 += step + 4.0 * modulation1 / WAVE_LEN / M_PI;
+		//phase1 = wrap(phase1, 1.0);
+		phase2 += step + 4.0 * modulation2 / WAVE_LEN / M_PI;
+		//phase2 = wrap(phase2, 1.0);
 		carrier_tmp[i] = crossf(
-			linterpf(tmp, fmod(phase1 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
-			linterpf(tmp, fmod(phase2 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			linterpf(tmp, wrap(phase1 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			linterpf(tmp, wrap(phase2 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
 			index_mod);
 	};
 	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
