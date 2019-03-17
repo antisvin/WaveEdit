@@ -188,6 +188,7 @@ enum EffectID {
 	FREQUENCY_MODULATION,
 	RING_MODULATION,
 	AMPLITUDE_MODULATION,
+	SPECTRAL_TRANSFER,
 	PRE_GAIN,
 	PHASE_SHIFT,
 	HARMONIC_SHIFT,
@@ -263,6 +264,7 @@ void ringModulation(float *carrier, const float *modulator, float index, float d
 void amplitudeModulation(float *carrier, const float *modulator, float index, float depth);
 void phaseModulation(float *carrier, const float *modulator, float index, float depth);
 void frequencyModulation(float *carrier, const float *modulator, float index, float depth);
+void convolution(float *carrier, const float *modulator, float depth);
 
 
 ////////////////////

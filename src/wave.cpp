@@ -12,6 +12,7 @@ const char *effectNames[EFFECTS_LEN] {
 	"Frequency Modulation",
 	"Ring Modulation",
 	"Amplitude Modulation",
+	"Spectral Transfer",
 	"Pre-Gain",
 	"Phase Shift",
 	"Harmonic Shift",
@@ -69,6 +70,11 @@ void Wave::updatePost() {
 	if (effects[AMPLITUDE_MODULATION] > 0.0) {
 		amplitudeModulation(out, currentBank.modulator_wave.samples, 0.0, clampf(effects[AMPLITUDE_MODULATION], 0.0, 1.0));
 	}	
+	
+	// Spectral Transfer
+	if (effects[SPECTRAL_TRANSFER] > 0.0) {
+		convolution(out, currentBank.modulator_wave.samples, clampf(effects[SPECTRAL_TRANSFER], 0.0, 1.0));
+	}
 	
 
 	// Pre-gain with saturation / soft clipping
@@ -504,15 +510,7 @@ void Wave::applyFrequencyModulation() {
 }
 
 void Wave::applySpectralTransfer() {
-	// Build the kernel in Fourier space
-	float fft[WAVE_LEN];
-	float kernel[WAVE_LEN];
-	RFFT(clipboardWave.samples, kernel, WAVE_LEN);
-	RFFT(samples, fft, WAVE_LEN);
-	for (int k = 0; k < WAVE_LEN / 2; k++) {
-		cmultf(&fft[2 * k], &fft[2 * k + 1], fft[2 * k], fft[2 * k + 1], kernel[2 * k], kernel[2 * k + 1]);
-	}
-	IRFFT(fft, samples, WAVE_LEN);
+	convolution(samples, clipboardWave.samples, 1.0);
 	updatePost();
 }
 
@@ -592,12 +590,12 @@ void phaseModulation(float *carrier, const float *modulator, float index, float 
 	for (int i = 0; i < WAVE_LEN * oversample; i++) {
 		float modulation1 = linterpf(modulator_tmp, wrap(i * ceilf(index), WAVE_LEN * oversample + 1)) * depth;
 		float modulation2 = linterpf(modulator_tmp, wrap(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1)) * depth;
+		carrier_tmp[i] = crossf(
+			linterpf(tmp, wrap((phase + modulation1) * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			linterpf(tmp, wrap((phase + modulation2) * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			index_mod);
 		phase += step;
 		phase = wrap(phase, 1.0);
-		carrier_tmp[i] = crossf(
-			linterpf(tmp, wrap(phase * WAVE_LEN * oversample + modulation1 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
-			linterpf(tmp, wrap(phase * WAVE_LEN * oversample + modulation2 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
-			index_mod);
 	};
 	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
 }
@@ -622,16 +620,37 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 	for (int i = 0; i < WAVE_LEN * oversample; i++) {
 		float modulation1 = linterpf(modulator_tmp, wrap(i * ceilf(index), WAVE_LEN * oversample + 1)) * depth;
 		float modulation2 = linterpf(modulator_tmp, wrap(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1)) * depth;
-		phase1 += step + 4.0 * modulation1 / WAVE_LEN / M_PI;
-		//phase1 = wrap(phase1, 1.0);
-		phase2 += step + 4.0 * modulation2 / WAVE_LEN / M_PI;
-		//phase2 = wrap(phase2, 1.0);
 		carrier_tmp[i] = crossf(
-			linterpf(tmp, wrap(phase1 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
-			linterpf(tmp, wrap(phase2 * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			linterpf(tmp, phase1 * WAVE_LEN * oversample),
+			linterpf(tmp, phase2 * WAVE_LEN * oversample),
 			index_mod);
+		phase1 += step + modulation1 / WAVE_LEN;
+		phase1 = wrap(phase1, 1.0);
+		phase2 += step + modulation2 / WAVE_LEN;
+		phase2 = wrap(phase2, 1.0);
 	};
 	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+}
+
+
+void convolution(float *carrier, const float *modulator, float depth) {
+	// Build the kernel in Fourier space
+	float fft[WAVE_LEN];
+	float kernel[WAVE_LEN];
+	float tmp[WAVE_LEN];
+	memcpy(tmp, carrier, sizeof(float) * WAVE_LEN);
+	
+	RFFT(modulator, kernel, WAVE_LEN);
+	RFFT(carrier, fft, WAVE_LEN);
+	for (int k = 0; k < WAVE_LEN / 2; k++) {
+		cmultf(&fft[2 * k], &fft[2 * k + 1], fft[2 * k], fft[2 * k + 1], kernel[2 * k], kernel[2 * k + 1]);
+	}
+	IRFFT(fft, carrier, WAVE_LEN);
+	
+	if (depth < 1.0) {
+		for (int i = 0; i < WAVE_LEN; i++)
+			carrier[i] = crossf(tmp[i], carrier[i], depth);
+	}
 }
 
 void Wave::saveWAV(const char *filename) {
