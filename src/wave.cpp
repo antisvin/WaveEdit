@@ -600,6 +600,7 @@ void phaseModulation(float *carrier, const float *modulator, float index, float 
 	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
 }
 
+
 void frequencyModulation(float *carrier, const float *modulator, float index, float depth) {
 	const int oversample = 4;
 	float tmp[WAVE_LEN * oversample + 1];
@@ -608,6 +609,17 @@ void frequencyModulation(float *carrier, const float *modulator, float index, fl
 	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
 	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
 	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	
+	// Remove DC offset - now our FM will be sweet like yo mama
+	float dc_offset = 0.0;
+	for (int i = 0; i < WAVE_LEN; i++) {
+		dc_offset += modulator[i];
+	}
+	dc_offset /= WAVE_LEN;
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		modulator_tmp[i] -= dc_offset;
+	};
+	
 	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
 	tmp[WAVE_LEN * oversample] = tmp[0];
 	
