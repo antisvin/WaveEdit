@@ -689,10 +689,19 @@ void renderMenu() {
 }
 
 
-void renderPreview() {
+void renderPreview(PlaySource *play_source) {
 	ImGui::Checkbox("Play", &playEnabled);
 	ImGui::SameLine();
 	ImGui::PushItemWidth(300.0);
+	
+	if (ImGui::RadioButton("Wave", *play_source == PLAY_WAVE)) *play_source = PLAY_WAVE;
+	ImGui::PushItemWidth(300.0);
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Carrier", *play_source == PLAY_CARRIER)) *play_source = PLAY_CARRIER;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Modulator", *play_source == PLAY_MODULATOR)) *play_source = PLAY_MODULATOR;
+	ImGui::SameLine();
+	
 	ImGui::SliderFloat("##playVolume", &playVolume, -60.0f, 0.0f, "Volume: %.2f dB");
 	ImGui::PushItemWidth(-1.0);
 	ImGui::SameLine();
@@ -1143,7 +1152,8 @@ void renderMain() {
 	{
 		// Menu bar
 		renderMenu();
-		renderPreview();
+
+		renderPreview(&playSource);
 		// Tab bar
 		{
 			static const char *tabLabels[NUM_PAGES] = {

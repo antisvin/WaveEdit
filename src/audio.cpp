@@ -8,6 +8,7 @@ float playFrequency = 220.0;
 float playFrequencySmooth = playFrequency;
 bool playModeXY = false;
 bool playEnabled = false;
+PlaySource playSource = PLAY_WAVE;
 bool morphInterpolate = true;
 float morphX = 0.0;
 float morphY = 0.0;
@@ -43,32 +44,40 @@ long srcCallback(void *cb_data, float **data) {
 		}
 
 		int index = (playIndex + i) % WAVE_LEN;
-		if (playModeXY) {
-			// Morph XY
-			int xi = morphXSmooth;
-			float xf = morphXSmooth - xi;
-			int yi = morphYSmooth;
-			float yf = morphYSmooth - yi;
-			// 2D linear interpolate
-			float v0 = crossf(
-				playingBank->waves[yi * BANK_GRID_WIDTH + xi].postSamples[index],
-				playingBank->waves[yi * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
-				xf);
-			float v1 = crossf(
-				playingBank->waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + xi].postSamples[index],
-				playingBank->waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
-				xf);
-			in[i] = crossf(v0, v1, yf);
+		if (playSource == PLAY_WAVE) {
+			if (playModeXY) {
+				// Morph XY
+				int xi = morphXSmooth;
+				float xf = morphXSmooth - xi;
+				int yi = morphYSmooth;
+				float yf = morphYSmooth - yi;
+				// 2D linear interpolate
+				float v0 = crossf(
+					playingBank->waves[yi * BANK_GRID_WIDTH + xi].postSamples[index],
+					playingBank->waves[yi * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+					xf);
+				float v1 = crossf(
+					playingBank->waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + xi].postSamples[index],
+					playingBank->waves[eucmodi(yi + 1, BANK_GRID_HEIGHT) * BANK_GRID_WIDTH + eucmodi(xi + 1, BANK_GRID_WIDTH)].postSamples[index],
+					xf);
+				in[i] = crossf(v0, v1, yf);
+			}
+			else {
+				// Morph Z
+				int zi = morphZSmooth;
+				float zf = morphZSmooth - zi;
+				in[i] = crossf(
+					playingBank->waves[zi].postSamples[index],
+					playingBank->waves[eucmodi(zi + 1, BANK_LEN)].postSamples[index],
+					zf);
+			}
 		}
-		else {
-			// Morph Z
-			int zi = morphZSmooth;
-			float zf = morphZSmooth - zi;
-			in[i] = crossf(
-				playingBank->waves[zi].postSamples[index],
-				playingBank->waves[eucmodi(zi + 1, BANK_LEN)].postSamples[index],
-				zf);
+		else if (playSource == PLAY_CARRIER) {
+			in[i] = playingBank->carrier_wave.samples[index];
 		}
+		else if (playSource == PLAY_MODULATOR) {
+			in[i] = playingBank->modulator_wave.samples[index];
+		};
 		in[i] = clampf(in[i] * gain, -1.0, 1.0);
 	}
 

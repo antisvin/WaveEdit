@@ -438,10 +438,17 @@ void catalogInit();
 ////////////////////
 
 // TODO Some of these should not be exposed in the header
+enum PlaySource {
+	PLAY_WAVE,
+	PLAY_CARRIER,
+	PLAY_MODULATOR
+};
+
 extern float playVolume;
 extern float playFrequency;
 extern float playFrequencySmooth;
 extern bool playEnabled;
+extern PlaySource playSource;
 extern bool playModeXY;
 extern bool morphInterpolate;
 extern float morphX;
