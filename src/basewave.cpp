@@ -24,6 +24,8 @@ void BaseWave::clear() {
 	top_y = 0.0;
 	bezier_ratio = 0.0;
 	bezier_weight = 0.0;
+	resonance = 0.0;
+	multi_algo = MUL_RESONANT;
 	updateShape();
 	updatePhasor();
 	generateSamples(false);
@@ -158,6 +160,7 @@ void BaseWave::generateSamples(bool update_waves) {
 	tmp[WAVE_LEN] = 1.0;
 
 	float final_phasor[WAVE_LEN];
+	float envelope[WAVE_LEN];
 	float tmp_samples[WAVE_LEN];
 	
 	if (resonance > 0.0) {
@@ -193,16 +196,39 @@ void BaseWave::generateSamples(bool update_waves) {
 			
 		}
 		*/
-		
-		float phase = 0.0;
-		float sync_phase = 0.0;
-		for (int i = 0; i < WAVE_LEN; i++) {
-			final_phasor[i] = linterpf(tmp, sync_phase * WAVE_LEN);
-			phase = (float)i / WAVE_LEN;
-			sync_phase += 1.0 / WAVE_LEN * (1 + MAX_RESONANCE * resonance);
-			if (sync_phase >= 1.0)
-				sync_phase -= 1.0;
-
+		if (multi_algo == MUL_RESONANT) {
+			float phase = 0.0;
+			float sync_phase = 0.0;
+			for (int i = 0; i < WAVE_LEN; i++) {
+				final_phasor[i] = linterpf(tmp, sync_phase * WAVE_LEN);
+				phase = (float)i / WAVE_LEN;
+				sync_phase += 1.0 / WAVE_LEN * (1 + MAX_RESONANCE * resonance);
+				if (sync_phase >= 1.0)
+					sync_phase -= 1.0;
+				envelope[i] = (float) (WAVE_LEN - i) / WAVE_LEN;
+			}
+		}
+		else if (multi_algo == MUL_DIV_MOD) {
+			float total_levels = rescalef(resonance, 0.0, 1.0, 1.0, 8.0);
+			float int_levels = floor(total_levels);
+			float rem_levels = total_levels - int_levels;
+			for (int i = 0; i < WAVE_LEN; i++) {
+				float pos = (total_levels) * i / WAVE_LEN;
+				if (pos <= int_levels) {
+					final_phasor[i] = fmod(pos, 1.0);
+					envelope[i] = 1.0;
+				}
+				else {
+					final_phasor[i] = fmod(pos, 1.0) / rem_levels;
+					envelope[i] = rem_levels;
+				}
+			};
+		}
+		else if (multi_algo == MUL_POWERS) {
+			for (int i = 0; i < WAVE_LEN; i++) {
+				final_phasor[i] = 0.0;
+				envelope[i] = 0.0;
+			};
 		}
 
 	}
@@ -219,7 +245,7 @@ void BaseWave::generateSamples(bool update_waves) {
 	
 	if (resonance > 0.0) {
 		for (int i = 0; i < WAVE_LEN; i++) {
-			tmp_samples[i] = rescalef(rescalef(tmp_samples[i], -1.0, 1.0, 0.0, 1.0) * (WAVE_LEN - i) / WAVE_LEN, 0.0, 1.0, -1.0, 1.0);
+			tmp_samples[i] = rescalef(rescalef(tmp_samples[i], -1.0, 1.0, 0.0, 1.0) * envelope[i], 0.0, 1.0, -1.0, 1.0);
 		};
 	}
 	

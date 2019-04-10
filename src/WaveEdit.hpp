@@ -283,6 +283,12 @@ enum WaveShapeID {
 };
 
 
+enum MultiplicationAlgo{
+	MUL_RESONANT,
+	MUL_DIV_MOD,
+	MUL_POWERS
+};
+
 struct Oscillator {
 	float pulse_width;
 	float dt;
@@ -331,6 +337,7 @@ struct BaseWave {
 	float top_x, top_y;
 	float bezier_ratio, bezier_weight;
 	float resonance;
+	MultiplicationAlgo multi_algo;
 	
 	float samples[WAVE_LEN];
 	float shape[WAVE_LEN];
