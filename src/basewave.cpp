@@ -213,11 +213,11 @@ void BaseWave::generateSamples(bool update_waves) {
 			for (int i = 0; i < WAVE_LEN; i++) {
 				float pos = (total_levels) * i / WAVE_LEN;
 				if (pos <= int_levels) {
-					final_phasor[i] = fmod(pos, 1.0);
+					final_phasor[i] = linterpf(tmp, fmod(pos, 1.0) * WAVE_LEN);
 					envelope[i] = 1.0;
 				}
 				else {
-					final_phasor[i] = fmod(pos, 1.0) / rem_levels;
+					final_phasor[i] = linterpf(tmp, fmod(pos, 1.0) / rem_levels * WAVE_LEN);
 					envelope[i] = rem_levels;
 				}
 			};
@@ -225,7 +225,8 @@ void BaseWave::generateSamples(bool update_waves) {
 		else if (multi_algo == MUL_HARMONIC) {
             float total_levels = round(1 + resonance * 15);
             for (int i = 0; i < WAVE_LEN; i++) {
-                final_phasor[i] = wrap(total_levels * i / WAVE_LEN, 1.0);
+                final_phasor[i] = linterpf(tmp, wrap(total_levels * i / WAVE_LEN, 1.0) * WAVE_LEN);
+                //wrap(total_levels * i / WAVE_LEN, 1.0);
                 envelope[i] = 1.0;
             }
 		}
