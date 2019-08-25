@@ -286,7 +286,7 @@ enum WaveShapeID {
 enum MultiplicationAlgo{
 	MUL_RESONANT,
 	MUL_DIV_MOD,
-	MUL_POWERS
+	MUL_HARMONIC
 };
 
 struct Oscillator {

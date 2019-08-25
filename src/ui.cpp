@@ -1121,14 +1121,29 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 			wave->generateSamples(update_waves);
 			historyPush();
 		}
-		
-		
-		if (ImGui::RadioButton("Resonant", wave->multi_algo == MUL_RESONANT)) wave->multi_algo = MUL_RESONANT;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Divisor-modulo", wave->multi_algo == MUL_DIV_MOD)) wave->multi_algo = MUL_DIV_MOD;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Powers of 2", wave->multi_algo == MUL_POWERS)) wave->multi_algo = MUL_POWERS;
+				
+		if (ImGui::RadioButton("Resonant", wave->multi_algo == MUL_RESONANT)) {
+			wave->multi_algo = MUL_RESONANT;            
+			wave->updatePhasor();
+			wave->generateSamples(update_waves);
+			historyPush();
+		}
 
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Divisor-modulo", wave->multi_algo == MUL_DIV_MOD)) {
+			wave->multi_algo = MUL_DIV_MOD;
+			wave->updatePhasor();
+			wave->generateSamples(update_waves);
+			historyPush();
+		}
+
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Harmonic", wave->multi_algo == MUL_HARMONIC)) {
+			wave->multi_algo = MUL_HARMONIC;
+			wave->updatePhasor();
+			wave->generateSamples(update_waves);
+			historyPush();
+		}
 		//static float resonance = 0.0;
 		//			if (ImGui::SliderFloat(id, &currentBank.waves[selectedId].effects[effect], 0.0f, 1.0f, text)) {
 		if (ImGui::SliderFloat("##resonance", &(wave->resonance), 0.0, 1.0, "Resonance: %.3f")) {

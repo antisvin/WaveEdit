@@ -2,8 +2,6 @@
 #include <string.h>
 
 
-
-
 Oscillator osc;
 
 
@@ -224,11 +222,12 @@ void BaseWave::generateSamples(bool update_waves) {
 				}
 			};
 		}
-		else if (multi_algo == MUL_POWERS) {
-			for (int i = 0; i < WAVE_LEN; i++) {
-				final_phasor[i] = 0.0;
-				envelope[i] = 0.0;
-			};
+		else if (multi_algo == MUL_HARMONIC) {
+            float total_levels = round(1 + resonance * 15);
+            for (int i = 0; i < WAVE_LEN; i++) {
+                final_phasor[i] = wrap(total_levels * i / WAVE_LEN, 1.0);
+                envelope[i] = 1.0;
+            }
 		}
 
 	}
