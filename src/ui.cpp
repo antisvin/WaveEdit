@@ -1026,7 +1026,10 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 		float x[WAVE_LEN / 2] = {};
 		renderHistogram("Harmonics View", 200.0, wave->harmonics, WAVE_LEN / 2, nullptr, 0, NO_TOOL);
 		
+        ImGui::Columns(2);
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f - 20);
 		ImGui::Text("Base Waveform");
+        
 		float shapeOversample[WAVE_LEN * oversample];
 		cyclicOversample(wave->shape, shapeOversample, WAVE_LEN, oversample);
 		if (renderWave("WaveEditor", 200.0, wave->shape, WAVE_LEN, shapeOversample, WAVE_LEN * oversample, tool)) {
@@ -1034,15 +1037,22 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 			historyPush();
 		}
 		
+		ImGui::NextColumn();
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f - 20);
 		ImGui::Text("Phasor");
+        
+//		ImGui::SameLine();
 		float phasorBuf[WAVE_LEN];
 		memcpy(phasorBuf, wave->phasor, sizeof(float) * WAVE_LEN);
 
 		//cyclicOversample(wave->phasor, phasorOversample, WAVE_LEN, oversample);
-		if (renderPhasor("PhasorEditor", 400.0, wave->phasor, WAVE_LEN, phasorBuf, WAVE_LEN, tool, wave->bottom_x, wave->bottom_y, wave->bottom_magnitude, wave->top_x, wave->top_y, wave->top_magnitude)) {
+		if (renderPhasor("PhasorEditor", 200.0, wave->phasor, WAVE_LEN, phasorBuf, WAVE_LEN, tool, wave->bottom_x, wave->bottom_y, wave->bottom_magnitude, wave->top_x, wave->top_y, wave->top_magnitude)) {
 			wave->generateSamples(update_waves);
 			historyPush();
 		}
+		ImGui::Columns();
+		
+        ImGui::PushItemWidth(ImGui::GetWindowWidth());
 		
 		if (ImGui::Checkbox("Lock Shapes", &(wave->lock_shapes))) {
 			wave->updateShape();
