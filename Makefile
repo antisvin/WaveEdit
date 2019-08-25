@@ -1,4 +1,4 @@
-VERSION = 1.1
+VERSION = 2.0
 
 VALID_WT_FORMATS := WAVEEDIT PHMK2 BLOFELD
 WT_FORMAT ?= WAVEEDIT
@@ -16,6 +16,7 @@ LDFLAGS =
 
 SOURCES = \
 	ext/pffft/pffft.c \
+        ext/osdialog/osdialog.c \
 	ext/lodepng/lodepng.cpp \
 	ext/imgui/imgui.cpp \
 	ext/imgui/imgui_draw.cpp \
