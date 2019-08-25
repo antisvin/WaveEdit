@@ -11,6 +11,229 @@ using namespace smf;
 #endif
 
 
+const char *crossmodNames[CROSSMOD_LEN] {
+    "Modulator Rotation",
+	"Phase Modulation",
+	"Frequency Modulation",
+	"Ring Modulation",
+	"Amplitude Modulation",
+	"Spectral Transfer"
+};
+
+
+void ringModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
+	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, fmod(i * ceilf(index), WAVE_LEN * oversample + 1));
+		float modulation2 = linterpf(modulator_tmp, fmod(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1));
+		//float mod_sample = linterpf(modulator, fmod((float)i * depth, WAVE_LEN));
+		carrier_tmp[i] *= crossf(
+			1.0,
+			crossf(modulation1, modulation2, index_mod),
+			depth);
+		//(1 + rescalef(modulation1, -1.0, 1.0, 0.0, 1.0) * depth);
+	};
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+};
+
+void amplitudeModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
+	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, fmod(i * ceilf(index), WAVE_LEN * oversample + 1));
+		float modulation2 = linterpf(modulator_tmp, fmod(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1));
+		//float mod_sample = linterpf(modulator, fmod((float)i * depth, WAVE_LEN));
+		carrier_tmp[i] *= (1 + crossf(
+			rescalef(modulation1, -1.0, 1.0, 0.0, depth),
+			rescalef(modulation2, -1.0, 1.0, 0.0, depth),
+			index_mod));
+		//(1 + rescalef(modulation1, -1.0, 1.0, 0.0, 1.0) * depth);
+	};
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+}
+
+void phaseModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
+	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	float phase = 0.0;
+	float step = 1.0 / WAVE_LEN / oversample;
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, wrap(i * ceilf(index), WAVE_LEN * oversample + 1)) * depth;
+		float modulation2 = linterpf(modulator_tmp, wrap(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1)) * depth;
+		carrier_tmp[i] = crossf(
+			linterpf(tmp, wrap((phase + modulation1) * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			linterpf(tmp, wrap((phase + modulation2) * WAVE_LEN * oversample, WAVE_LEN * oversample)),
+			index_mod);
+		phase += step;
+		phase = wrap(phase, 1.0);
+	};
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+}
+
+
+void frequencyModulation(float *carrier, const float *modulator, float index, float depth) {
+	const int oversample = 4;
+	float tmp[WAVE_LEN * oversample + 1];
+	float carrier_tmp[WAVE_LEN * oversample];
+	float modulator_tmp[WAVE_LEN * oversample + 1];
+	cyclicOversample(carrier, carrier_tmp, WAVE_LEN, oversample);
+	cyclicOversample(modulator, modulator_tmp, WAVE_LEN, oversample);
+	modulator_tmp[WAVE_LEN * oversample] = modulator_tmp[0];
+	
+	// Remove DC offset - now our FM will be sweet like yo mama
+	float dc_offset = 0.0;
+	for (int i = 0; i < WAVE_LEN; i++) {
+		dc_offset += modulator[i];
+	}
+	dc_offset /= WAVE_LEN;
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		modulator_tmp[i] -= dc_offset;
+	};
+	
+	memcpy(tmp, carrier_tmp, sizeof(float) * WAVE_LEN * oversample);
+	tmp[WAVE_LEN * oversample] = tmp[0];
+	
+	float index_mod = fmod(index, 1.0);
+	if (index_mod == 0.0) index_mod = 1.0;
+	
+	float phase1 = 0.0;
+	float phase2 = 0.0;
+	float step = 1.0 / WAVE_LEN / oversample;
+	for (int i = 0; i < WAVE_LEN * oversample; i++) {
+		float modulation1 = linterpf(modulator_tmp, wrap(i * ceilf(index), WAVE_LEN * oversample + 1)) * depth;
+		float modulation2 = linterpf(modulator_tmp, wrap(i * ceilf(index + 1.0), WAVE_LEN * oversample + 1)) * depth;
+		carrier_tmp[i] = crossf(
+			linterpf(tmp, phase1 * WAVE_LEN * oversample),
+			linterpf(tmp, phase2 * WAVE_LEN * oversample),
+			index_mod);
+		phase1 += step + modulation1 / WAVE_LEN;
+		phase1 = wrap(phase1, 1.0);
+		phase2 += step + modulation2 / WAVE_LEN;
+		phase2 = wrap(phase2, 1.0);
+	};
+	cyclicUndersample(carrier_tmp, carrier, WAVE_LEN * oversample, oversample);
+}
+
+
+void convolution(float *carrier, const float *modulator, float depth) {
+	// Build the kernel in Fourier space
+	float fft[WAVE_LEN];
+	float kernel[WAVE_LEN];
+	float tmp[WAVE_LEN];
+	memcpy(tmp, carrier, sizeof(float) * WAVE_LEN);
+	
+	RFFT(modulator, kernel, WAVE_LEN);
+	RFFT(carrier, fft, WAVE_LEN);
+	for (int k = 0; k < WAVE_LEN / 2; k++) {
+		cmultf(&fft[2 * k], &fft[2 * k + 1], fft[2 * k], fft[2 * k + 1], kernel[2 * k], kernel[2 * k + 1]);
+	}
+	IRFFT(fft, carrier, WAVE_LEN);
+	
+	if (depth < 1.0) {
+		for (int i = 0; i < WAVE_LEN; i++)
+			carrier[i] = crossf(tmp[i], carrier[i], depth);
+	}
+}
+
+void Bank::updateCrossmod() {
+    float tmp_mod[WAVE_LEN];
+    float out[WAVE_LEN];
+
+	float tmp[WAVE_LEN];
+    memcpy(out, carrier_wave.samples, sizeof(float) * WAVE_LEN);
+    
+    if (crossmod[MODULATOR_ROTATION] > 0.0) {
+        RFFT(modulator_wave.samples, tmp, WAVE_LEN);
+        for (int k = 0; k < WAVE_LEN / 2; k++) {
+            float phase = clampf(crossmod[MODULATOR_ROTATION], 0.0, 1.0);
+			float br = cosf(2 * M_PI * phase);
+			float bi = -sinf(2 * M_PI * phase);
+			cmultf(&tmp[2 * k], &tmp[2 * k + 1], tmp[2 * k], tmp[2 * k + 1], br, bi);
+        }
+        IRFFT(tmp, tmp_mod, WAVE_LEN);
+    }
+    else {
+        memcpy(tmp_mod, modulator_wave.samples, sizeof(float) * WAVE_LEN);
+    };
+
+
+	// Phase Modulation
+	if (crossmod[PHASE_MODULATION] > 0.0) {
+		phaseModulation(out, tmp_mod, 0.0, clampf(crossmod[PHASE_MODULATION], 0.0, 1.0));
+	}
+	
+	// Frequency Modulation
+	if (crossmod[FREQUENCY_MODULATION] > 0.0) {
+		frequencyModulation(out, tmp_mod, 0.0, clampf(crossmod[FREQUENCY_MODULATION], 0.0, 1.0));
+	}
+	
+	// Ring Modulation
+	if (crossmod[RING_MODULATION] > 0.0) {
+		ringModulation(out, tmp_mod, 0.0, clampf(crossmod[RING_MODULATION], 0.0, 1.0));
+	}
+	
+	// Amplitude Modulation
+	if (crossmod[AMPLITUDE_MODULATION] > 0.0) {
+		amplitudeModulation(out, tmp_mod, 0.0, clampf(crossmod[AMPLITUDE_MODULATION], 0.0, 1.0));
+	}	
+	
+	// Spectral Transfer
+	if (crossmod[SPECTRAL_TRANSFER] > 0.0) {
+		convolution(out, tmp_mod, clampf(crossmod[SPECTRAL_TRANSFER], 0.0, 1.0));
+	}
+
+    normalize_array(out, WAVE_LEN, -1.0, 1.0, 0.0);
+	
+	// Convert wave to spectrum
+	RFFT(out, tmp, WAVE_LEN);
+	// Convert spectrum to harmonics
+	for (int i = 0; i < WAVE_LEN / 2; i++) {
+		harmonics[i] = hypotf(tmp[2 * i], tmp[2 * i + 1]) * 2.0;
+	}
+    IRFFT(tmp, samples, WAVE_LEN);
+    
+	//memcpy(samples, out, sizeof(float) * WAVE_LEN);
+	for (int i = 0; i < BANK_LEN; i++) {
+		memcpy(waves[i].samples, samples, sizeof(float) * WAVE_LEN);
+		waves[i].commitSamples();
+	}
+}
+
+
 void Bank::clear() {
 	// The lazy way
 	memset(this, 0, sizeof(Bank));
@@ -18,6 +241,7 @@ void Bank::clear() {
 	modulator_wave.clear();
 
 	for (int i = 0; i < BANK_LEN; i++) {
+        waves[i].normalize = true;
 		waves[i].commitSamples();
 	}
 }

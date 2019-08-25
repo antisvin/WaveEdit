@@ -37,7 +37,8 @@ static void refreshStyle();
 
 
 enum Page {
-	CARRIER_WAVE_PAGE=0,
+    CROSSMOD_WAVE_PAGE=0,
+	CARRIER_WAVE_PAGE,
 	MODULATOR_WAVE_PAGE,
 	EDITOR_PAGE,
 	EFFECT_PAGE,
@@ -48,8 +49,7 @@ enum Page {
 	NUM_PAGES
 };
 
-Page currentPage = CARRIER_WAVE_PAGE;
-
+Page currentPage = CROSSMOD_WAVE_PAGE ;
 
 static ImVec4 lighten(ImVec4 col, float p) {
 	col.x = crossf(col.x, 1.0, p);
@@ -320,41 +320,6 @@ static void menuPasteSelected() {
 	historyPush();
 }
 
-static void menuWavesAM() {
-	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
-		currentBank.waves[i].applyAmplitudeModulation();
-	}
-	historyPush();
-}
-
-static void menuWavesRM() {
-	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
-		currentBank.waves[i].applyRingModulation();
-	}
-	historyPush();
-}
-
-static void menuWavesPM() {
-	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
-		currentBank.waves[i].applyPhaseModulation();
-	}
-	historyPush();
-}
-
-static void menuWavesFM() {
-	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
-		currentBank.waves[i].applyFrequencyModulation();
-	}
-	historyPush();
-}
-
-static void menuWavesST() {
-	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
-		currentBank.waves[i].applySpectralTransfer();
-	}
-	historyPush();
-}
-
 static void menuMorphEffectsAll() {
 	int a = mini(selectedId, lastSelectedId);
 	int b = maxi(selectedId, lastSelectedId);
@@ -428,16 +393,6 @@ static void menuKeyCommands() {
 		if (clipboardActive) {
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_V) && !io.KeyShift && !io.KeyAlt)
 				menuPaste();
-			if (ImGui::IsKeyPressed(SDL_SCANCODE_1) && !io.KeyShift && !io.KeyAlt)
-				menuWavesAM();
-			if (ImGui::IsKeyPressed(SDL_SCANCODE_2) && !io.KeyShift && !io.KeyAlt)
-				menuWavesRM();
-			if (ImGui::IsKeyPressed(SDL_SCANCODE_3) && !io.KeyShift && !io.KeyAlt)
-				menuWavesPM();
-			if (ImGui::IsKeyPressed(SDL_SCANCODE_4) && !io.KeyShift && !io.KeyAlt)
-				menuWavesFM();
-			if (ImGui::IsKeyPressed(SDL_SCANCODE_5) && !io.KeyShift && !io.KeyAlt)
-				menuWavesST();
 		}
 	}
 	// I have NO idea why the scancode is needed here but the keycodes are needed for the letters.
@@ -460,20 +415,22 @@ static void menuKeyCommands() {
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_SPACE))
 				playEnabled = !playEnabled;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_1))
-				currentPage = CARRIER_WAVE_PAGE;
+				currentPage = CROSSMOD_WAVE_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_2))
-				currentPage = MODULATOR_WAVE_PAGE;
+				currentPage = CARRIER_WAVE_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_3))
-				currentPage = EDITOR_PAGE;
+				currentPage = MODULATOR_WAVE_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_4))
-				currentPage = EFFECT_PAGE;
+				currentPage = EDITOR_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_5))
-				currentPage = GRID_PAGE;
+				currentPage = EFFECT_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_6))
-				currentPage = WATERFALL_PAGE;
+				currentPage = GRID_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_7))
-				currentPage = IMPORT_PAGE;
+				currentPage = WATERFALL_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_8))
+				currentPage = IMPORT_PAGE;
+			if (ImGui::IsKeyPressed(SDL_SCANCODE_9))
 				currentPage = DB_PAGE;
 			if (ImGui::IsKeyPressed(SDL_SCANCODE_UP))
 				incrementSelectedId(currentPage == GRID_PAGE ? -BANK_GRID_WIDTH : -1);
@@ -505,21 +462,6 @@ void renderWaveMenu() {
 	}
 	if (ImGui::MenuItem("Randomize Effects", "R")) {
 		menuRandomize();
-	}
-	if (ImGui::MenuItem("Amplitude Modulation", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+1" : "Ctrl+1", false, clipboardActive)) {
-		menuWavesAM();
-	}
-	if (ImGui::MenuItem("Ring Modulation", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+2" : "Ctrl+2", false, clipboardActive)) {
-		menuWavesRM();
-	}
-	if (ImGui::MenuItem("Phase Modulation", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+3" : "Ctrl+3", false, clipboardActive)) {
-		menuWavesPM();
-	}
-	if (ImGui::MenuItem("Frequency Modulation", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+4" : "Ctrl+4", false, clipboardActive)) {
-		menuWavesFM();
-	}
-	if (ImGui::MenuItem("Spectral Transfer", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+5" : "Ctrl+5", false, clipboardActive)) {
-		menuWavesST();
 	}
 	if (ImGui::MenuItem("Morph All Effects", "A")) {
 		menuMorphEffectsAll();
@@ -697,8 +639,11 @@ void renderPreview(PlaySource *play_source) {
 	if (ImGui::RadioButton("Wave", *play_source == PLAY_WAVE)) *play_source = PLAY_WAVE;
 	ImGui::PushItemWidth(300.0);
 	ImGui::SameLine();
+	if (ImGui::RadioButton("Moduated wave", *play_source == PLAY_CROSSMOD)) *play_source = PLAY_CROSSMOD;
+	ImGui::SameLine();
 	if (ImGui::RadioButton("Carrier", *play_source == PLAY_CARRIER)) *play_source = PLAY_CARRIER;
 	ImGui::SameLine();
+
 	if (ImGui::RadioButton("Modulator", *play_source == PLAY_MODULATOR)) *play_source = PLAY_MODULATOR;
 	ImGui::SameLine();
 	
@@ -751,6 +696,18 @@ void effectSlider(EffectID effect) {
 	snprintf(text, sizeof(text), "%s: %%.3f", effectNames[effect]);
 	if (ImGui::SliderFloat(id, &currentBank.waves[selectedId].effects[effect], 0.0f, 1.0f, text)) {
 		currentBank.waves[selectedId].updatePost();
+		historyPush();
+	}
+}
+
+
+void crossmodSlider(CrossmodID crossmod) {
+	char id[64];
+	snprintf(id, sizeof(id), "##%s", crossmodNames[crossmod]);
+	char text[64];
+	snprintf(text, sizeof(text), "%s: %%.3f", crossmodNames[crossmod]);
+	if (ImGui::SliderFloat(id, &currentBank.crossmod[crossmod], 0.0f, 1.0f, text)) {
+		currentBank.updateCrossmod();
 		historyPush();
 	}
 }
@@ -993,6 +950,7 @@ void waterfallPage() {
 }
 
 
+
 void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
 	{
@@ -1166,6 +1124,67 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 }
 
 
+void crossmodWavePage() {
+	ImGui::BeginChild("Sidebar", ImVec2(200, 0), true);
+	{
+		float dummyZ = 0.0;
+		ImGui::PushItemWidth(-1);
+		renderBankGrid("SidebarGrid", BANK_LEN * 35.0, 1, &dummyZ, &morphZ);
+		refreshMorphSnap();
+	}
+	ImGui::EndChild();
+
+	ImGui::SameLine();
+	
+	ImGui::BeginChild("Cross Modulation", ImVec2(0, 0), true);
+	{
+		ImGui::PushItemWidth(-1.0);
+		//static Tool tool = PENCIL_TOOL;
+		//renderToolSelector(&tool);
+		
+	
+		const int oversample = 4;
+		
+		ImGui::Text("Final Waveform");
+		//float samplesOversample[WAVE_LEN * oversample];
+		//cyclicOversample(wave->samples, samplesOversample, WAVE_LEN, oversample);
+//		if (renderWave("FinalWaveEditor", 200.0, wave->samples, WAVE_LEN, wave->samples, WAVE_LEN, tool)) {
+        
+		renderWave("FinalWaveEditor", 200.0, currentBank.samples, WAVE_LEN, nullptr, 0, NO_TOOL);
+		
+		ImGui::Text("Harmonics");
+		float x[WAVE_LEN / 2] = {};
+		renderHistogram("Harmonics View", 200.0, currentBank.harmonics, WAVE_LEN / 2, nullptr, 0, NO_TOOL);
+		
+        ImGui::Columns(2);
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f - 20);
+		//ImGui::Text("Carrier Wave");
+        
+		//float carrierOversample[WAVE_LEN * oversample];
+		//cyclicOversample(wave->shape, shapeOversample, WAVE_LEN, oversample);
+		renderWave("Carrier Wave", 200.0, currentBank.carrier_wave.samples, WAVE_LEN, nullptr, 0, NO_TOOL);
+		
+		ImGui::NextColumn();
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f - 20);
+		//ImGui::Text("Modulator Wave");
+        
+		renderWave("Modulator Wave", 200.0, currentBank.modulator_wave.samples, WAVE_LEN, nullptr, 0, NO_TOOL);
+
+        
+		ImGui::Columns();
+		
+        ImGui::PushItemWidth(ImGui::GetWindowWidth());
+        
+        ImGui::Text("Effects");
+		for (int i = 0; i < CROSSMOD_LEN; i++) {
+			crossmodSlider((CrossmodID) i);
+		}
+		
+	}
+	ImGui::EndChild();
+
+}
+
 void carrierWavePage() {
 	baseWavePage(&(currentBank.carrier_wave), "Carrier Wave", true);
 }
@@ -1189,6 +1208,7 @@ void renderMain() {
 		// Tab bar
 		{
 			static const char *tabLabels[NUM_PAGES] = {
+                "Modulated Wave",
 				"Carrier Wave Editor",
 				"Modulator Wave Editor",
 				"Waveform Editor",
@@ -1207,8 +1227,9 @@ void renderMain() {
 		playModeXY = false;
 		playingBank = &currentBank;
 		switch (currentPage) {
+		case CROSSMOD_WAVE_PAGE: crossmodWavePage(); break;
 		case CARRIER_WAVE_PAGE: carrierWavePage(); break;
-		case MODULATOR_WAVE_PAGE: modulatorWavePage(); break;
+        case MODULATOR_WAVE_PAGE: modulatorWavePage(); break;
 		case EDITOR_PAGE: editorPage(); break;
 		case EFFECT_PAGE: effectPage(); break;
 		case GRID_PAGE: gridPage(); break;

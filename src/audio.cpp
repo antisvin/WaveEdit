@@ -72,6 +72,10 @@ long srcCallback(void *cb_data, float **data) {
 					zf);
 			}
 		}
+		else if (playSource == PLAY_CROSSMOD) {
+			in[i] = playingBank->samples[index];
+
+		}
 		else if (playSource == PLAY_CARRIER) {
 			in[i] = playingBank->carrier_wave.samples[index];
 		}

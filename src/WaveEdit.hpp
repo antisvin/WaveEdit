@@ -184,11 +184,6 @@ unsigned char *base64_decode(const unsigned char *src, size_t len, size_t *out_l
 
 
 enum EffectID {
-	PHASE_MODULATION,
-	FREQUENCY_MODULATION,
-	RING_MODULATION,
-	AMPLITUDE_MODULATION,
-	SPECTRAL_TRANSFER,
 	PRE_GAIN,
 	PHASE_SHIFT,
 	HARMONIC_SHIFT,
@@ -206,11 +201,6 @@ enum EffectID {
 	SLEW,
 	LOWPASS,
 	HIGHPASS,
-	PHASE_FEEDBACK,
-	FREQUENCY_FEEDBACK,
-	RING_FEEDBACK,
-	AMPLITUDE_FEEDBACK,
-	MODULATION_INDEX,
 	LOW_BOOST,
 	MID_BOOST,
 	HIGH_BOOST,
@@ -233,7 +223,7 @@ struct Wave {
 
 	float effects[EFFECTS_LEN];
 	bool cycle;
-	bool normalize;
+	bool normalize = true;
 
 	void clear();
 	/** Generates post arrays from the sample array, by applying effects */
@@ -243,11 +233,7 @@ struct Wave {
 	void clearEffects();
 	void morphEffect(Wave *from_wave, Wave *to_wave, EffectID effect, float fade);
 	void morphAllEffects(Wave *from_wave, Wave *to_wave, float fade);
-	void applyRingModulation();
-	void applyAmplitudeModulation();
-	void applyPhaseModulation();
-	void applyFrequencyModulation();
-	void applySpectralTransfer();
+
 	/** Applies effects to the sample array and resets the effect parameters */
 	void bakeEffects();
 	void randomizeEffects();
@@ -260,12 +246,6 @@ struct Wave {
 };
 
 extern bool clipboardActive;
-void ringModulation(float *carrier, const float *modulator, float index, float depth);
-void amplitudeModulation(float *carrier, const float *modulator, float index, float depth);
-void phaseModulation(float *carrier, const float *modulator, float index, float depth);
-void frequencyModulation(float *carrier, const float *modulator, float index, float depth);
-void convolution(float *carrier, const float *modulator, float depth);
-
 
 ////////////////////
 // oscillator.cpp
@@ -376,11 +356,29 @@ struct BaseWave {
 
 #endif
 
+
+enum CrossmodID {
+    MODULATOR_ROTATION,
+	PHASE_MODULATION,
+	FREQUENCY_MODULATION,
+	RING_MODULATION,
+	AMPLITUDE_MODULATION,
+	SPECTRAL_TRANSFER,
+    CROSSMOD_LEN
+};
+
+extern const char *crossmodNames[CROSSMOD_LEN];
+
+
 struct Bank {
 	Wave waves[BANK_LEN];
 	BaseWave carrier_wave;
 	BaseWave modulator_wave;
-
+    
+	float crossmod[CROSSMOD_LEN];
+    float samples[WAVE_LEN];
+    float harmonics[WAVE_LEN / 2];
+    void updateCrossmod();
 	void clear();
 	void swap(int i, int j);
 	void shuffle();
@@ -407,6 +405,11 @@ struct Bank {
 #endif
 };
 
+void ringModulation(float *carrier, const float *modulator, float index, float depth);
+void amplitudeModulation(float *carrier, const float *modulator, float index, float depth);
+void phaseModulation(float *carrier, const float *modulator, float index, float depth);
+void frequencyModulation(float *carrier, const float *modulator, float index, float depth);
+void convolution(float *carrier, const float *modulator, float depth);
 
 ////////////////////
 // history.cpp
@@ -446,6 +449,7 @@ void catalogInit();
 
 // TODO Some of these should not be exposed in the header
 enum PlaySource {
+    PLAY_CROSSMOD,
 	PLAY_WAVE,
 	PLAY_CARRIER,
 	PLAY_MODULATOR

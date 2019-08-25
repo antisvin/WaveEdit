@@ -162,38 +162,6 @@ void BaseWave::generateSamples(bool update_waves) {
 	float tmp_samples[WAVE_LEN];
 	
 	if (resonance > 0.0) {
-		/*
-		float total_levels = powf(2.0, resonance * 3);
-		float int_levels = powf(2.0, floor(resonance * 3));
-		float rem_levels = total_levels - int_levels;
-		float int_width = (float) WAVE_LEN / total_levels;
-		//float int_width = full_width * int_levels / total_levels;
-		float full_width = (
-		float rem_width = (float) WAVE_LEN / rem_levels;
-		printf("%f %f %f %f\n", total_levels, int_levels, int_width, rem_width);
-		for (int i = 0; i < WAVE_LEN; i++) {
-			float phase = (float) i;
-			
-			
-			int step = (int) (phase / full_width);
-			float step_phase = fmod(phase, full_width);
-			float full_pos = fmod(phase, full_width);
-			float int_pos = fmod(full_pos, int_width);
-			float rem_pos = fmod(full_pos, int_width);
-			
-			//printf("%i %f %f %f\n", i, full_pos, int_pos, rem_pos);
-			
-			if (step_phase < int_width) {
-				final_phasor[i] = linterpf(tmp, rescalef(int_pos, 0, int_width, 0, WAVE_LEN));
-			}
-			else {
-				//printf("%i RP %f RW %f FP %f FW %f IP %f IW %f\n", i, rem_pos, rem_width, full_pos, full_width, int_pos, int_width);
-				//printf("%f\n", rescalef(rem_pos, 0, rem_width, 0, WAVE_LEN));
-				final_phasor[i] = linterpf(tmp, rescalef(rem_pos, 0, rem_width, 0, WAVE_LEN));
-			}
-			
-		}
-		*/
 		if (multi_algo == MUL_RESONANT) {
 			float phase = 0.0;
 			float sync_phase = 0.0;
@@ -259,7 +227,9 @@ void BaseWave::generateSamples(bool update_waves) {
 	};
 	memcpy(samples, tmp_samples, sizeof(float) * WAVE_LEN);
 
-	updateSamples(update_waves);
+	//updateSamples(update_waves);
+    
+    currentBank.updateCrossmod();
 };
 
 
