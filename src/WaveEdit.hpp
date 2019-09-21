@@ -377,16 +377,17 @@ struct Bank {
 	BaseWave modulator_wave;
     
 	float crossmod[CROSSMOD_LEN];
-    float samples[WAVE_LEN];
-    float harmonics[WAVE_LEN / 2];
-    void updateCrossmod();
+	float samples[WAVE_LEN];
+	float harmonics[WAVE_LEN / 2];
+	void updateCrossmod();
 	void clear();
 	void swap(int i, int j);
+	void randomize();
+	void morph();
 	void shuffle();
 	/** `in` must be length BANK_LEN * WAVE_LEN */
 	void setSamples(const float *in);
 	void getPostSamples(float *out);
-	void duplicateToAll(int waveId);
 	/** Binary dump of the bank struct */
 	void save(const char *filename);
 	void load(const char *filename);
@@ -504,6 +505,11 @@ void renderWaterfall(const char *name, float height, float amplitude, float angl
 Returns the relative amount dragged
 */
 float renderBankWave(const char *name, float height, const float *lines, int linesLen, float bankStart, float bankEnd, int bankLen);
+// Functions for UI shortcuts
+extern void menuRandomizeBank();
+extern void menuMorphBank();
+extern void menuShuffleBank();
+extern void menuClearBank();
 
 ////////////////////
 // ui.cpp

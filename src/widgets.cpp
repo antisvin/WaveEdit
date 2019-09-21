@@ -343,22 +343,46 @@ bool renderHistogram(const char *name, float height, float *bars, int barsLen, c
 }
 
 
+void menuRandomizeBank() {
+	currentBank.randomize();
+	historyPush();
+}
+
+
+void menuMorphBank() {
+	currentBank.morph();
+	historyPush();
+}
+
+
+void menuShuffleBank() {
+	currentBank.shuffle();
+	historyPush();
+}
+
+
+void menuClearBank() {
+	currentBank.clear();
+	historyPush();
+}
+
+
 static void waveMenu() {
 	if (ImGui::BeginPopup("Wave Menu")) {
 		renderWaveMenu();
 		ImGui::MenuItem("##spacer", NULL, false, false);
 		ImGui::MenuItem("(Bank)", NULL, false, false);
-		if (ImGui::MenuItem("Duplicate To All")) {
-			currentBank.duplicateToAll(selectedId);
-			historyPush();
+		if (ImGui::MenuItem("Randomize Bank", "Alt+R")) {
+			menuRandomizeBank();
 		}
-		if (ImGui::MenuItem("Shuffle Bank")) {
-			currentBank.shuffle();
-			historyPush();
+		if (ImGui::MenuItem("Morph Bank", "Alt+M")) {
+			menuMorphBank();
 		}
-		if (ImGui::MenuItem("Clear All")) {
-			currentBank.clear();
-			historyPush();
+		if (ImGui::MenuItem("Shuffle Bank", "Alt+S")) {
+			menuShuffleBank();
+		}
+		if (ImGui::MenuItem("Clear All", "Alt+C")) {
+			menuClearBank();
 		}
 		ImGui::EndPopup();
 	}

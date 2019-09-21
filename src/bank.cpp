@@ -262,6 +262,20 @@ void Bank::swap(int i, int j) {
 }
 
 
+void Bank::randomize() {
+	for (int i = 0; i < BANK_LEN; i++) {
+		waves[i].randomizeEffects();
+	}
+}
+
+void Bank::morph() {
+	for (int i = 0; i < BANK_GRID_WIDTH; i++) {
+		for (int j = 1; j < BANK_GRID_HEIGHT; j++) {
+			waves[i * BANK_GRID_WIDTH + j].morphAllEffects(&waves[i * BANK_GRID_WIDTH], &waves[(i + 1) * BANK_GRID_WIDTH % BANK_LEN], ((float) j) / BANK_GRID_WIDTH);
+		}
+	}
+}
+
 void Bank::shuffle() {
 	for (int j = BANK_LEN - 1; j >= 3; j--) {
 		int i = rand() % j;
@@ -281,15 +295,6 @@ void Bank::setSamples(const float *in) {
 void Bank::getPostSamples(float *out) {
 	for (int j = 0; j < BANK_LEN; j++) {
 		memcpy(&out[j * WAVE_LEN], waves[j].postSamples, sizeof(float) * WAVE_LEN);
-	}
-}
-
-
-void Bank::duplicateToAll(int waveId) {
-	for (int j = 0; j < BANK_LEN; j++) {
-		if (j != waveId)
-			waves[j] = waves[waveId];
-		// No need to commit the wave because we're copying everything
 	}
 }
 

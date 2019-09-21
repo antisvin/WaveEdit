@@ -37,7 +37,7 @@ static void refreshStyle();
 
 
 enum Page {
-    CROSSMOD_WAVE_PAGE=0,
+	CROSSMOD_WAVE_PAGE=0,
 	CARRIER_WAVE_PAGE,
 	MODULATOR_WAVE_PAGE,
 	EDITOR_PAGE,
@@ -289,6 +289,16 @@ static void menuPaste() {
 	historyPush();
 }
 
+
+static void menuDuplicateToBank() {
+	for (int i = 0; i < BANK_LEN; i++){
+		if (i != selectedId)
+			currentBank.waves[i].copy(&currentBank.waves[selectedId]);
+	}
+	historyPush();
+}
+
+
 static void menuDuplicateToRow() {
 	int pasteStart = selectedId / BANK_GRID_WIDTH * BANK_GRID_WIDTH;
 	for (int i = pasteStart; i < pasteStart + BANK_GRID_WIDTH; i++){
@@ -388,6 +398,8 @@ static void menuKeyCommands() {
 			menuCopy();
 		if (ImGui::IsKeyPressed(SDL_SCANCODE_X) && !io.KeyShift && !io.KeyAlt)
 			menuCut();
+		if (ImGui::IsKeyPressed(SDL_SCANCODE_B) && !io.KeyShift && !io.KeyAlt)
+			menuDuplicateToBank();
 		if (ImGui::IsKeyPressed(SDL_SCANCODE_D) && !io.KeyShift && !io.KeyAlt)
 			menuDuplicateToRow();
 		if (clipboardActive) {
@@ -399,6 +411,17 @@ static void menuKeyCommands() {
 	// It looks like SDLZ_F1 is not defined correctly or something.
 	if (ImGui::IsKeyPressed(SDL_SCANCODE_F1))
 		menuManual();
+	
+	if (io.KeyAlt) {
+		if (ImGui::IsKeyPressed(SDL_SCANCODE_R))
+			menuRandomize();
+		if (ImGui::IsKeyPressed(SDL_SCANCODE_M))
+			menuMorphBank();
+		if (ImGui::IsKeyPressed(SDL_SCANCODE_S))
+			menuShuffleBank();
+		if (ImGui::IsKeyPressed(SDL_SCANCODE_C))
+			menuClearBank();
+	}
 
 	if (!io.KeySuper && !io.KeyCtrl && !io.KeyShift && !io.KeyAlt) {
 		// Only trigger these key commands if no text box is focused
@@ -488,6 +511,9 @@ void renderWaveMenu() {
 	}
 	if (ImGui::MenuItem("Paste", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+V" : "Ctrl+V", false, clipboardActive)) {
 		menuPaste();
+	}
+	if (ImGui::MenuItem("Duplicate To Bank", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+D" : "Ctrl+B")) {
+		menuDuplicateToBank();
 	}
 	if (ImGui::MenuItem("Duplicate To Row", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+D" : "Ctrl+D")) {
 		menuDuplicateToRow();
@@ -1208,7 +1234,7 @@ void renderMain() {
 		// Tab bar
 		{
 			static const char *tabLabels[NUM_PAGES] = {
-                "Modulated Wave",
+				"Modulated Wave",
 				"Carrier Wave Editor",
 				"Modulator Wave Editor",
 				"Waveform Editor",
