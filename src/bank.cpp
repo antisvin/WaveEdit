@@ -12,12 +12,13 @@ using namespace smf;
 
 
 const char *crossmodNames[CROSSMOD_LEN] {
-    "Modulator Rotation",
+	"Modulator Rotation",
 	"Phase Modulation",
 	"Frequency Modulation",
 	"Ring Modulation",
 	"Amplitude Modulation",
-	"Spectral Transfer"
+	"Spectral Transfer",
+	"Modulator Mix"
 };
 
 
@@ -170,25 +171,25 @@ void convolution(float *carrier, const float *modulator, float depth) {
 }
 
 void Bank::updateCrossmod() {
-    float tmp_mod[WAVE_LEN];
-    float out[WAVE_LEN];
+	float tmp_mod[WAVE_LEN];
+	float out[WAVE_LEN];
 
 	float tmp[WAVE_LEN];
-    memcpy(out, carrier_wave.samples, sizeof(float) * WAVE_LEN);
+	memcpy(out, carrier_wave.samples, sizeof(float) * WAVE_LEN);
     
-    if (crossmod[MODULATOR_ROTATION] > 0.0) {
-        RFFT(modulator_wave.samples, tmp, WAVE_LEN);
-        for (int k = 0; k < WAVE_LEN / 2; k++) {
-            float phase = clampf(crossmod[MODULATOR_ROTATION], 0.0, 1.0);
+	if (crossmod[MODULATOR_ROTATION] > 0.0) {
+		RFFT(modulator_wave.samples, tmp, WAVE_LEN);
+		for (int k = 0; k < WAVE_LEN / 2; k++) {
+			float phase = clampf(crossmod[MODULATOR_ROTATION], 0.0, 1.0);
 			float br = cosf(2 * M_PI * phase);
 			float bi = -sinf(2 * M_PI * phase);
 			cmultf(&tmp[2 * k], &tmp[2 * k + 1], tmp[2 * k], tmp[2 * k + 1], br, bi);
-        }
-        IRFFT(tmp, tmp_mod, WAVE_LEN);
-    }
-    else {
-        memcpy(tmp_mod, modulator_wave.samples, sizeof(float) * WAVE_LEN);
-    };
+		}
+		IRFFT(tmp, tmp_mod, WAVE_LEN);
+	}
+		else {
+			memcpy(tmp_mod, modulator_wave.samples, sizeof(float) * WAVE_LEN);
+		};
 
 
 	// Phase Modulation
@@ -215,8 +216,15 @@ void Bank::updateCrossmod() {
 	if (crossmod[SPECTRAL_TRANSFER] > 0.0) {
 		convolution(out, tmp_mod, clampf(crossmod[SPECTRAL_TRANSFER], 0.0, 1.0));
 	}
+	
+	// Modulator Mix
+	if (crossmod[MODULATOR_MIX] > 0.0) {
+		for (int i = 0; i < WAVE_LEN; i++) {
+			out[i] += tmp_mod[i] * crossmod[MODULATOR_MIX];
+		}
+	}
 
-    normalize_array(out, WAVE_LEN, -1.0, 1.0, 0.0);
+	normalize_array(out, WAVE_LEN, -1.0, 1.0, 0.0);
 	
 	// Convert wave to spectrum
 	RFFT(out, tmp, WAVE_LEN);
@@ -224,7 +232,7 @@ void Bank::updateCrossmod() {
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
 		harmonics[i] = hypotf(tmp[2 * i], tmp[2 * i + 1]) * 2.0;
 	}
-    IRFFT(tmp, samples, WAVE_LEN);
+	IRFFT(tmp, samples, WAVE_LEN);
     
 	//memcpy(samples, out, sizeof(float) * WAVE_LEN);
 	for (int i = 0; i < BANK_LEN; i++) {
