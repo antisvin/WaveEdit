@@ -152,7 +152,7 @@ void audioOpen(int deviceId) {
 
 	const char *deviceName = deviceId >= 0 ? SDL_GetAudioDeviceName(deviceId, 0) : NULL;
 	// TODO Be more tolerant of devices which can't use floats or 1 channel
-	audioDevice = SDL_OpenAudioDevice(deviceName, 0, &spec, &audioSpec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE);
+	audioDevice = SDL_OpenAudioDevice(deviceName, 0, &spec, &audioSpec, SDL_AUDIO_ALLOW_ANY_CHANGE);
 	if (audioDevice <= 0)
 		return;
 	SDL_PauseAudioDevice(audioDevice, 0);
