@@ -47,6 +47,7 @@ enum Page {
 	WATERFALL_PAGE,
 	IMPORT_PAGE,
 	DB_PAGE,
+	OWL_PAGE,
 	NUM_PAGES
 };
 
@@ -588,11 +589,6 @@ void renderMenu() {
 	if (ImGui::BeginMenuBar()) {
 		// This will be hidden by the window with the logo
 		if (ImGui::BeginMenu("                        v" TOSTRING(VERSION), false)) {
-			ImGui::EndMenu();
-		}
-		// OWL
-		if (ImGui::BeginMenu("OWL")) {
-			//if (ImGui::MenuItem("Active", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+N" : "Ctrl+N"))
 			ImGui::EndMenu();
 		}
 		// File
@@ -1287,7 +1283,8 @@ void renderMain() {
 				"Grid XY View",
 				"Waterfall View",
 				"Import",
-				"WaveEdit Online"
+				"WaveEdit Online",
+				"OWL",
 			};
 			static int hoveredTab = 0;
 			ImGui::TabLabels(NUM_PAGES, tabLabels, (int*)&currentPage, NULL, false, &hoveredTab);
@@ -1307,6 +1304,7 @@ void renderMain() {
 		case WATERFALL_PAGE: waterfallPage(); break;
 		case IMPORT_PAGE: importPage(); break;
 		case DB_PAGE: dbPage(); break;
+		case OWL_PAGE: owlPage(); break;
 		default: break;
 		}
 	}

@@ -11,6 +11,7 @@
 #include <thread>
 #include <vector>
 #include <complex>
+#include <RtMidi.h>
 
 
 #define STRINGIFY(x) #x
@@ -551,14 +552,16 @@ void importPage();
 // owl.cpp
 ////////////////////
 
+void owlPage();
+
 class OwlDevice {
 public:
-	OwlDevice(int port_number)
-		: port_number(port_number) {};
-
+	OwlDevice(int port_number, const std::string& name);
 	void storeBankBySlotNumber(uint8_t slot_number);
 	void storeBankByName(const std::string& name);
-	bool isActive() const;
+	const std::string& getName() const {
+		return device_name;
+	}
 private:
 	int port_number;
 	uint32_t hardware_id;
@@ -569,12 +572,30 @@ private:
 class OwlController {
 public:
 	std::vector<OwlDevice> devices;	
+	~OwlController(){
+		if (midiin != nullptr)
+			delete midiin;
+		if (midiout != nullptr)
+			delete midiout;
+	}
 	// Active device should be autoselected on first scan or when updating from menu
 	void scan(bool set_active);
-	void setActiveDevice(OwlDevice& device) { active_device = &device; }
-	OwlDevice* getActiveDevice() { return active_device; }
+	void setActiveDevice(int id) {
+		active_device = id;
+	}
+	OwlDevice* getActiveDevice() {
+		return &devices[active_device];
+	}
+	bool isActive(int id) const {
+		if (devices.size() > id)
+			return active_device == id;
+		else
+			return false;
+	}
 private:
-	OwlDevice* active_device;
+	int active_device;
+	RtMidiIn* midiin;
+	RtMidiOut* midiout;
 };
 
 extern OwlController owl;
