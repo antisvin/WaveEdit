@@ -317,6 +317,7 @@ struct BaseWave {
 	float top_x, top_y;
 	float bezier_ratio, bezier_weight;
 	float resonance;
+	bool is_frozen;
 	MultiplicationAlgo multi_algo;
 	
 	float samples[WAVE_LEN];
@@ -331,6 +332,12 @@ struct BaseWave {
 	
 	void generateShape(const float *shape_phasor, float *samples);
 	float harmonics[WAVE_LEN / 2];
+
+	void setFrozen(bool frozen){
+		is_frozen = frozen;
+	}
+
+	void loadSamples(const Wave& wave);
 };
 
 

@@ -245,8 +245,8 @@ void Bank::updateCrossmod() {
 void Bank::clear() {
 	// The lazy way
 	memset(this, 0, sizeof(Bank));
-	carrier_wave.clear();
 	modulator_wave.clear();
+	carrier_wave.clear();
 
 	for (int i = 0; i < BANK_LEN; i++) {
         waves[i].normalize = true;

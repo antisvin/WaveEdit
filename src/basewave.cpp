@@ -30,7 +30,10 @@ void BaseWave::clear() {
 }
 
 
-void BaseWave::updateShape() {	
+void BaseWave::updateShape() {
+	if (is_frozen)
+		return;
+
 	float linear_phasor[WAVE_LEN];
 	for (int i = 0; i < WAVE_LEN; i++)
 		linear_phasor[i] = (float) i / WAVE_LEN;
@@ -241,3 +244,8 @@ void BaseWave::updateSamples(bool copy_samples) {
 	}
 };
 
+void BaseWave::loadSamples(const Wave& wave){
+	memcpy(shape, wave.samples, sizeof(float) * WAVE_LEN);
+	//updatePhasor();
+	generateSamples(false);
+};

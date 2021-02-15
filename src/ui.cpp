@@ -31,6 +31,7 @@ char lastFilename[1024] = "";
 static int styleId = 0;
 int selectedId = 0;
 int lastSelectedId = 0;
+extern Oscillator osc;
 
 
 static void refreshStyle();
@@ -309,6 +310,20 @@ static void menuDuplicateToRow() {
 }
 
 
+static void menuSetAsCarrierWave() {
+	currentBank.carrier_wave.setFrozen(true);
+	currentBank.carrier_wave.loadSamples(currentBank.waves[selectedId]);
+	historyPush();
+}
+
+
+static void menuSetAsModulatorWave() {
+	currentBank.modulator_wave.setFrozen(true);
+	currentBank.modulator_wave.loadSamples(currentBank.waves[selectedId]);
+	historyPush();
+}
+
+
 static void menuClear() {
 	for (int i = mini(selectedId, lastSelectedId); i <= maxi(selectedId, lastSelectedId); i++) {
 		currentBank.waves[i].clear();
@@ -517,6 +532,12 @@ void renderWaveMenu() {
 	}
 	if (ImGui::MenuItem("Duplicate To Row", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+D" : "Ctrl+D")) {
 		menuDuplicateToRow();
+	}
+	if (ImGui::MenuItem("Set As Carrier Wave", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+2" : "Ctrl+2")) {
+		menuSetAsCarrierWave();
+	}
+	if (ImGui::MenuItem("Set As Modulator Wave", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+3" : "Ctrl+3")) {
+		menuSetAsModulatorWave();
 	}
 
 	if (ImGui::MenuItem("Open Wave...")) {
@@ -1043,7 +1064,17 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 			wave->generateSamples(update_waves);
 			historyPush();
 		};
-		
+
+		ImGui::SameLine();
+		if (ImGui::Checkbox("Freeze Wave", &(wave->is_frozen))) {
+			historyPush();
+		};
+
+		if (wave->is_frozen) {
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		}
+
 		if (ImGui::SliderFloat("##lower_shape", &(wave->lower_shape), 0.0, 1.0, "Lower shape: %.3f")) {
 			if (wave->lock_shapes)
 				wave->upper_shape = wave->lower_shape;
@@ -1052,7 +1083,7 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 			historyPush();
 		}
 		
-		if (wave->lock_shapes) {
+		if (wave->lock_shapes && !wave->is_frozen) {
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 		}
@@ -1063,7 +1094,7 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 			historyPush();
 		}
 		
-		if (wave->lock_shapes) {
+		if (wave->lock_shapes && !wave->is_frozen) {
 			ImGui::PopItemFlag();
 			ImGui::PopStyleVar();
 		}
@@ -1078,6 +1109,11 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 			wave->updateShape();
 			wave->generateSamples(update_waves);
 			historyPush();
+		}
+
+		if (wave->is_frozen) {
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
 		}
 
 		if (ImGui::SliderFloat("##bottom_angle", &(wave->bottom_angle), 0.0, 1.0, "Bottom angle: %.3f")) {
@@ -1115,7 +1151,11 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 			wave->generateSamples(update_waves);
 			historyPush();
 		}
-				
+
+		//BulletText
+        ImGui::AlignTextToFramePadding();
+		ImGui::Text("Resonance Mode:");
+		ImGui::SameLine();
 		if (ImGui::RadioButton("Resonant", wave->multi_algo == MUL_RESONANT)) {
 			wave->multi_algo = MUL_RESONANT;            
 			wave->updatePhasor();
