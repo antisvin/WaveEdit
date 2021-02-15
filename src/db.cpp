@@ -461,7 +461,8 @@ void dbInit() {
 	// Load sekret string
 	FILE *sekretFile = fopen("sekret.txt", "r");
 	if (sekretFile) {
-		fscanf(sekretFile, "%127s", sekret);
+		int ignored __attribute__((unused));
+		ignored = fscanf(sekretFile, "%127s", sekret);
 		fclose(sekretFile);
 	}
 }

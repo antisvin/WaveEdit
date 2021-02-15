@@ -1571,7 +1571,8 @@ void uiInit() {
 	{
 		FILE *f = fopen("ui.dat", "rb");
 		if (f) {
-			fread(&styleId, sizeof(styleId), 1, f);
+			int ignored __attribute__((unused));
+			ignored = fread(&styleId, sizeof(styleId), 1, f);
 			fclose(f);
 		}
 	}

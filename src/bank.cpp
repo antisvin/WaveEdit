@@ -243,8 +243,7 @@ void Bank::updateCrossmod() {
 
 
 void Bank::clear() {
-	// The lazy way
-	memset(this, 0, sizeof(Bank));
+	*this = Bank();
 	modulator_wave.clear();
 	carrier_wave.clear();
 
@@ -314,7 +313,8 @@ void Bank::load(const char *filename) {
 	FILE *f = fopen(filename, "rb");
 	if (!f)
 		return;
-	fread(this, sizeof(*this), 1, f);
+	int ignored __attribute__((unused));
+	ignored = fread(this, sizeof(*this), 1, f);
 	fclose(f);
 
 	for (int j = 0; j < BANK_LEN; j++) {
