@@ -24,6 +24,7 @@ SOURCES = \
 	ext/imgui/imgui_widgets.cpp \
 	ext/imgui/examples/imgui_impl_sdl.cpp \
 	ext/imgui/examples/imgui_impl_opengl2.cpp \
+	ext/rtmidi/RtMidi.cpp \
 	$(wildcard src/*.cpp)
 
 
@@ -67,7 +68,7 @@ ifeq ($(WT_FORMAT), BLOFELD)
 		ext/midifile/src-library/MidiEventList.cpp \
 		ext/midifile/src-library/MidiFile.cpp \
 		ext/midifile/src-library/MidiMessage.cpp
-	FLAGS += -Iext/midifile/include
+	LDFLAGS += -Iext/midifile/include
 endif
 
 
@@ -109,7 +110,6 @@ ifeq ($(ARCH),lin)
 	cp dep/lib/libsndfile.so.1 dist/WaveEdit
 	cp dep/lib/libjansson.so.4 dist/WaveEdit
 	cp dep/lib/libcurl.so.4 dist/WaveEdit
-	cp dep/lib/libmidifile.so dist/WaveEdit
 else ifeq ($(ARCH),mac)
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/MacOS
 	mkdir -p dist/WaveEdit/WaveEdit.app/Contents/Resources

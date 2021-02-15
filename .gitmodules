@@ -13,3 +13,6 @@
 [submodule "ext/imgui"]
 	path = ext/imgui
 	url = https://github.com/antisvin/imgui.git
+[submodule "ext/rtmidi"]
+	path = ext/rtmidi
+	url = https://github.com/thestk/rtmidi.git
