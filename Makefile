@@ -8,10 +8,13 @@ endif
 
 FLAGS = -Wall -Wextra -Wno-unused-parameter -g -Wno-unused -O3 -march=nocona -ffast-math \
 	-DVERSION=$(VERSION) -DPFFFT_SIMD_DISABLE -DWAVETABLE_FORMAT_$(WT_FORMAT) \
-	-I. -Iext -Iext/imgui -Idep/include -Idep/include/SDL2
+	-I. -Iext -Iext/imgui -Idep/include -Idep/include/SDL2 -Iext/rtmidi
 CFLAGS =
 CXXFLAGS = -std=c++11
 LDFLAGS =
+
+# Should be one of ALSA, JACK, CORE, MM
+RTMIDI_BACKEND ?= ALSA
 
 
 SOURCES = \
@@ -58,6 +61,28 @@ else ifeq ($(ARCH),win)
 	OBJECTS += info.o
 info.o: info.rc
 	windres $^ $@
+endif
+
+#RtMIDI backend
+ifeq ($(RTMIDI_BACKEND), JACK)
+FLAGS += -D__UNIX_JACK__
+LDFLAGS += -ljack
+else
+ifeq ($(RTMIDI_BACKEND), ALSA)
+FLAGS += -D__LINUX_ALSA__
+LDFLAGS += -lasound
+else
+ifeq ($(RTMIDI_BACKEND), CORE)
+FLAGS += -D__MACOSX_CORE__
+LDFLAGS += -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
+else
+ifeq ($(RTMIDI_BACKEND), MM)
+$(error not implemented)
+else
+$(error unknown RtMidi backend)
+endif
+endif
+endif
 endif
 
 

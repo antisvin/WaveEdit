@@ -590,6 +590,11 @@ void renderMenu() {
 		if (ImGui::BeginMenu("                        v" TOSTRING(VERSION), false)) {
 			ImGui::EndMenu();
 		}
+		// OWL
+		if (ImGui::BeginMenu("OWL")) {
+			//if (ImGui::MenuItem("Active", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+N" : "Ctrl+N"))
+			ImGui::EndMenu();
+		}
 		// File
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New Bank", ImGui::GetIO().ConfigMacOSXBehaviors ? "Cmd+N" : "Ctrl+N"))

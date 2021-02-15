@@ -546,3 +546,35 @@ void dbPage();
 ////////////////////
 
 void importPage();
+
+////////////////////
+// owl.cpp
+////////////////////
+
+class OwlDevice {
+public:
+	OwlDevice(int port_number)
+		: port_number(port_number) {};
+
+	void storeBankBySlotNumber(uint8_t slot_number);
+	void storeBankByName(const std::string& name);
+	bool isActive() const;
+private:
+	int port_number;
+	uint32_t hardware_id;
+	std::string device_name;
+};
+
+
+class OwlController {
+public:
+	std::vector<OwlDevice> devices;	
+	// Active device should be autoselected on first scan or when updating from menu
+	void scan(bool set_active);
+	void setActiveDevice(OwlDevice& device) { active_device = &device; }
+	OwlDevice* getActiveDevice() { return active_device; }
+private:
+	OwlDevice* active_device;
+};
+
+extern OwlController owl;
