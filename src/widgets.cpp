@@ -716,3 +716,6 @@ float renderBankWave(const char *name, float height, const float *lines, int lin
 	}
 	return delta;
 }
+
+void renderResourceName(const char *name, float height, int gridWidth, float *gridX, float *gridY) {
+}

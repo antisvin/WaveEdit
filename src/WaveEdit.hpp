@@ -12,6 +12,7 @@
 #include <vector>
 #include <complex>
 #include <RtMidi.h>
+#include "OpenWareMidiControl.h"
 
 
 #define STRINGIFY(x) #x
@@ -556,16 +557,30 @@ void owlPage();
 
 class OwlDevice {
 public:
-	OwlDevice(int port_number, const std::string& name);
+	OwlDevice(int port_number, const std::string& name, RtMidiIn* midiin, RtMidiOut* midiout);
 	void storeBankBySlotNumber(uint8_t slot_number);
 	void storeBankByName(const std::string& name);
 	const std::string& getName() const {
 		return device_name;
 	}
+	void fetchResources();
+	void handleResponse(double deltatime, std::vector< unsigned char >* message);
 private:
 	int port_number;
 	uint32_t hardware_id;
 	std::string device_name;
+	enum owl_state {
+		COMMAND,
+		PATCHES,
+		RESOURCES,		
+	};
+	owl_state state;
+	std::vector<std::string> log;
+	RtMidiIn* midiin;
+	RtMidiOut* midiout;
+
+	void sendRequest(uint8_t cmd);
+	void sendCc(uint8_t cmd, uint8_t value);
 };
 
 
