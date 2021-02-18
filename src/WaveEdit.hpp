@@ -216,10 +216,12 @@ struct Wave {
 	float spectrum[WAVE_LEN];
 	/** Norm of spectrum */
 	float harmonics[WAVE_LEN / 2];
+	float phases[WAVE_LEN / 2];
 	/** Wave after effects have been applied */
 	float postSamples[WAVE_LEN];
 	float postSpectrum[WAVE_LEN];
 	float postHarmonics[WAVE_LEN / 2];
+	float postPhases[WAVE_LEN / 2];
 
 	float effects[EFFECTS_LEN];
 	bool cycle;
@@ -230,6 +232,7 @@ struct Wave {
 	void updatePost();
 	void commitSamples();
 	void commitHarmonics();
+	void commitPhases();
 	void clearEffects();
 	void morphEffect(Wave *from_wave, Wave *to_wave, EffectID effect, float fade);
 	void morphAllEffects(Wave *from_wave, Wave *to_wave, float fade);
@@ -332,6 +335,7 @@ struct BaseWave {
 	
 	void generateShape(const float *shape_phasor, float *samples);
 	float harmonics[WAVE_LEN / 2];
+	float phases[WAVE_LEN / 2];
 
 	void setFrozen(bool frozen){
 		is_frozen = frozen;
@@ -386,6 +390,7 @@ struct Bank {
 	float crossmod[CROSSMOD_LEN];
 	float samples[WAVE_LEN];
 	float harmonics[WAVE_LEN / 2];
+	float phases[WAVE_LEN / 2];
 	void updateCrossmod();
 	void clear();
 	void swap(int i, int j);

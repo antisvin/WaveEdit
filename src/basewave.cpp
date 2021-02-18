@@ -224,9 +224,10 @@ void BaseWave::generateSamples(bool update_waves) {
 	
 	// Convert wave to spectrum
 	RFFT(tmp_samples, tmp, WAVE_LEN);
-	// Convert spectrum to harmonics
+	// Convert spectrum to harmonics and phases
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
 		harmonics[i] = hypotf(tmp[2 * i], tmp[2 * i + 1]) * 2.0;
+		phases[i] = atan2f(tmp[2 * i], tmp[2 * i + 1]);
 	};
 	memcpy(samples, tmp_samples, sizeof(float) * WAVE_LEN);
 

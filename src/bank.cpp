@@ -231,6 +231,7 @@ void Bank::updateCrossmod() {
 	// Convert spectrum to harmonics
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
 		harmonics[i] = hypotf(tmp[2 * i], tmp[2 * i + 1]) * 2.0;
+		phases[i] = atan2f(tmp[2 * i], tmp[2 * i + 1]);
 	}
 	IRFFT(tmp, samples, WAVE_LEN);
     

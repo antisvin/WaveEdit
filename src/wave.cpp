@@ -350,7 +350,8 @@ void Wave::updatePost() {
 	RFFT(postSamples, postSpectrum, WAVE_LEN);
 	// Convert spectrum to harmonics
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
-		postHarmonics[i] = hypotf(postSpectrum[2 * i], postSpectrum[2 * i + 1]) * 2.0;
+		postHarmonics[i] = hypotf(postSpectrum[2 * i], postSpectrum[2 * i + 1]) * 2.0f;
+		postPhases[i] = atan2f(postSpectrum[2 * i + 1], postSpectrum[2 * i]) / M_PI / 2.0f + 0.5f;
 	}
 }
 
@@ -359,7 +360,8 @@ void Wave::commitSamples() {
 	RFFT(samples, spectrum, WAVE_LEN);
 	// Convert spectrum to harmonics
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
-		harmonics[i] = hypotf(spectrum[2 * i], spectrum[2 * i + 1]) * 2.0;
+		harmonics[i] = hypotf(spectrum[2 * i], spectrum[2 * i + 1]) * 2.0f;
+		phases[i] = atan2f(spectrum[2 * i + 1], spectrum[2 * i]); // No need to normalize this
 	}
 	updatePost();
 }
@@ -392,6 +394,19 @@ void Wave::commitHarmonics() {
 				spectrum[2 * i + 1] = -newHarmonic;
 			}
 		}
+	}
+	// Convert spectrum to wave
+	IRFFT(spectrum, samples, WAVE_LEN);
+	updatePost();
+}
+
+void Wave::commitPhases() {
+	// Rescale spectrum by the new norm
+	for (int i = 0; i < WAVE_LEN / 2; i++) {
+		float newPhase = phases[i] * M_PI * 2 + M_PI;
+		float magnitude = harmonics[i] / 2.0f;
+		spectrum[2 * i] = magnitude * cosf(newPhase);
+		spectrum[2 * i + 1] = magnitude * sinf(newPhase);
 	}
 	// Convert spectrum to wave
 	IRFFT(spectrum, samples, WAVE_LEN);

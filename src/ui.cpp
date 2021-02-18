@@ -821,6 +821,12 @@ void editorPage() {
 			historyPush();
 		}
 
+		ImGui::Text("Phases");
+		if (renderHistogram("PhasesEditor", 200.0, wave->phases, WAVE_LEN / 2, wave->postPhases, WAVE_LEN / 2, tool)) {
+			currentBank.waves[selectedId].commitPhases();
+			historyPush();
+		}
+
 		ImGui::Text("Effects");
 		for (int i = 0; i < EFFECTS_LEN; i++) {
 			effectSlider((EffectID) i);
@@ -1016,7 +1022,6 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 		static Tool tool = PENCIL_TOOL;
 		renderToolSelector(&tool);
 		
-	
 		const int oversample = 4;
 		
 		ImGui::Text("Final Waveform");
@@ -1028,9 +1033,11 @@ void baseWavePage(BaseWave *wave, const char* title, bool update_waves) {
 		}
 		
 		ImGui::Text("Harmonics");
-		float x[WAVE_LEN / 2] = {};
 		renderHistogram("Harmonics View", 200.0, wave->harmonics, WAVE_LEN / 2, nullptr, 0, NO_TOOL);
 		
+		ImGui::Text("Phases");
+		renderHistogram("Phases View", 200.0, wave->phases, WAVE_LEN / 2, nullptr, 0, NO_TOOL);
+
         ImGui::Columns(2);
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f - 20);
 		ImGui::Text("Base Waveform");
@@ -1219,9 +1226,11 @@ void crossmodWavePage() {
 		renderWave("FinalWaveEditor", 200.0, currentBank.samples, WAVE_LEN, nullptr, 0, NO_TOOL);
 		
 		ImGui::Text("Harmonics");
-		float x[WAVE_LEN / 2] = {};
 		renderHistogram("Harmonics View", 200.0, currentBank.harmonics, WAVE_LEN / 2, nullptr, 0, NO_TOOL);
-		
+
+		ImGui::Text("Phases");
+		renderHistogram("Phases View", 200.0, currentBank.phases, WAVE_LEN / 2, nullptr, 0, NO_TOOL);
+
         ImGui::Columns(2);
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f - 20);
 		//ImGui::Text("Carrier Wave");
