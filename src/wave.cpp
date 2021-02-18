@@ -351,7 +351,12 @@ void Wave::updatePost() {
 	// Convert spectrum to harmonics
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
 		postHarmonics[i] = hypotf(postSpectrum[2 * i], postSpectrum[2 * i + 1]) * 2.0f;
-		postPhases[i] = atan2f(postSpectrum[2 * i + 1], postSpectrum[2 * i]) / M_PI / 2.0f + 0.5f;
+		if (postHarmonics[i] > 1.0e-3)
+			postPhases[i] = atan2f(postSpectrum[2 * i + 1], postSpectrum[2 * i]) / M_PI / 2.0f + 0.5f;
+		else {
+			postPhases[i] = 0.f;
+			phases[i] = 0.f;
+		}
 	}
 }
 
@@ -361,7 +366,7 @@ void Wave::commitSamples() {
 	// Convert spectrum to harmonics
 	for (int i = 0; i < WAVE_LEN / 2; i++) {
 		harmonics[i] = hypotf(spectrum[2 * i], spectrum[2 * i + 1]) * 2.0f;
-		phases[i] = atan2f(spectrum[2 * i + 1], spectrum[2 * i]); // No need to normalize this
+		phases[i] = clampf(atan2f(spectrum[2 * i + 1], spectrum[2 * i]), 0.f, 1.f); // No need to normalize this
 	}
 	updatePost();
 }
